@@ -25,11 +25,14 @@ import socket
 import select
 import errno
 import signal
+import struct
 from getpass import getpass, getuser
 from time import time
 
 import Crypto.Cipher.AES
+import Crypto.Hash.HMAC
 import Crypto.Hash.SHA256
+import Crypto.Protocol.KDF
 
 PROGNAME = os.path.basename(__file__)
 DATABASE = os.path.expanduser(os.path.join('~', '.config', PROGNAME))
@@ -43,14 +46,19 @@ class Error(Exception):
 
 ## Encrypted storage
 
+KEY_SIZE = 32
+SALT_SIZE = 48
+ITERATIONS = 10000
+
 class WrongPassphraseOrBrokenDatabase(Error):
 	def __str__(self):
 		return 'Wrong passphrase or broken database'
 
 class Database(collections.MutableMapping):
-	def __init__(self, passphrase):
+	_header_struct = struct.Struct('{}s{}s'.format(SALT_SIZE, Crypto.Cipher.AES.block_size))
+
+	def __init__(self):
 		self._data = {}
-		self._set_passphrase(passphrase)
 
 	def __getitem__(self, nickname):
 		return self._data[nickname.lower()][1]
@@ -73,8 +81,12 @@ class Database(collections.MutableMapping):
 	def _set_item(self, nickname, password):
 		self._data[nickname.lower()] = (nickname, password)
 
-	def _set_passphrase(self, passphrase):
-		self._key = Crypto.Hash.SHA256.new(passphrase.encode('utf-8')).digest()
+	def _init_key(self, passphrase, salt):
+		self._key = Crypto.Protocol.KDF.PBKDF2(
+			passphrase.encode('utf-8'), salt, KEY_SIZE, ITERATIONS,
+			lambda p, s: Crypto.Hash.HMAC.new(p, s, Crypto.Hash.SHA256).digest()
+		)
+		self._salt = salt
 	
 	def _get_cipher(self, iv):
 		return Crypto.Cipher.AES.new(self._key, Crypto.Cipher.AES.MODE_CBC, iv)
@@ -86,36 +98,32 @@ class Database(collections.MutableMapping):
 		plaintext += b' ' * (block_size - len(plaintext) % block_size)
 
 		iv = os.urandom(block_size)
-		ciphertext = iv + self._get_cipher(iv).encrypt(plaintext)
+		ciphertext = self._get_cipher(iv).encrypt(plaintext)
 
 		with open(DATABASE, 'wb') as file:
+			file.write(self._salt)
+			file.write(iv)
 			file.write(ciphertext)
 	
 	def change_passphrase(self, passphrase):
-		self._set_passphrase(passphrase)
+		self._init_key(passphrase, os.urandom(SALT_SIZE))
 		self._write()
 		
 	@classmethod
-	def decrypt(cls, ciphertext, passphrase):
-		db = cls(passphrase)
-
-		block_size = Crypto.Cipher.AES.block_size
-		blocks, leftover = divmod(len(ciphertext), block_size)
-		
-		if blocks < 1 or leftover != 0:
+	def decrypt(cls, data, passphrase):
+		try:
+			salt, iv = cls._header_struct.unpack_from(data)
+		except struct.error:
 			raise WrongPassphraseOrBrokenDatabase
 
-		iv = ciphertext[:block_size]
-		ciphertext = ciphertext[block_size:]
-		plaintext = db._get_cipher(iv).decrypt(ciphertext)
+		db = cls()
+		db._init_key(passphrase, salt)
+
+		cipher = db._get_cipher(iv)
+		ciphertext = data[cls._header_struct.size:]
 
 		try:
-			plaintext = plaintext.decode('utf-8')
-		except UnicodeDecodeError:
-			raise WrongPassphraseOrBrokenDatabase
-
-		try:
-			passwords = json.loads(plaintext)
+			passwords = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
 		except ValueError:
 			raise WrongPassphraseOrBrokenDatabase
 
@@ -129,8 +137,8 @@ class Database(collections.MutableMapping):
 
 	@classmethod
 	def create(cls, passphrase):
-		db = cls({}, passphrase)
-		db._write()
+		db = cls()
+		db.change_passphrase(passphrase)
 		return db
 
 
