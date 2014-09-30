@@ -72,7 +72,13 @@ class Database(collections.MutableMapping):
 		iv = os.urandom(block_size)
 		ciphertext = self._get_cipher(iv).encrypt(plaintext)
 
-		with open(DATABASE, 'wb') as file:
+		try:
+			file = open(DATABASE, 'wb')
+		except FileNotFoundError:
+			os.makedirs(os.path.dirname(DATABASE))
+			file = open(DATABASE, 'wb')
+
+		with file:
 			file.write(self._salt)
 			file.write(iv)
 			file.write(ciphertext)
