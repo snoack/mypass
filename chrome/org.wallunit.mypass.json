@@ -1,0 +1,9 @@
+{
+	"name": "org.wallunit.mypass",
+	"description": "A password manager",
+	"path": "/usr/local/lib/mypass/chrome-native-messaging-host",
+	"type": "stdio",
+	"allowed_origins": [
+		"chrome-extension://ddbeciaedkkgeiaellofogahfcolmkka/"
+	]
+}
