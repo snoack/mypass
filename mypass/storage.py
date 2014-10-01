@@ -12,7 +12,6 @@
 
 import os
 import json
-import collections
 import struct
 
 import Crypto.Cipher.AES
@@ -20,38 +19,20 @@ import Crypto.Hash.HMAC
 import Crypto.Hash.SHA256
 import Crypto.Protocol.KDF
 
-from mypass import WrongPassphraseOrBrokenDatabase, DATABASE
+from mypass import CredentialsDoNotExist, CredentialsAlreadytExist, WrongPassphraseOrBrokenDatabase
+from mypass import DATABASE
 
 KEY_SIZE = 32
 SALT_SIZE = 48
 ITERATIONS = 10000
 
-class Database(collections.MutableMapping):
+SINGLE_PASSWORD = ''
+
+class Database:
 	_header_struct = struct.Struct('{}s{}s'.format(SALT_SIZE, Crypto.Cipher.AES.block_size))
 
 	def __init__(self):
 		self._data = {}
-
-	def __getitem__(self, nickname):
-		return self._data[nickname.lower()][1]
-
-	def __setitem__(self, nickname, password):
-		self._set_item(nickname, password)
-		self._write()
-
-	def __delitem__(self, nickname):
-		del self._data[nickname.lower()]
-		self._write()
-
-	def __iter__(self):
-		for _, (nickname, _) in sorted(self._data.items(), key=lambda pair: pair[0]):
-			yield nickname
-
-	def __len__(self):
-		return len(self._data)
-
-	def _set_item(self, nickname, password):
-		self._data[nickname.lower()] = (nickname, password)
 
 	def _init_key(self, passphrase, salt):
 		self._key = Crypto.Protocol.KDF.PBKDF2(
@@ -66,7 +47,7 @@ class Database(collections.MutableMapping):
 	def _write(self):
 		block_size = Crypto.Cipher.AES.block_size
 
-		plaintext = json.dumps(dict(self), ensure_ascii=False).encode('utf-8')
+		plaintext = json.dumps(dict(self._data.values()), ensure_ascii=False).encode('utf-8')
 		plaintext += b' ' * (block_size - len(plaintext) % block_size)
 
 		iv = os.urandom(block_size)
@@ -83,14 +64,77 @@ class Database(collections.MutableMapping):
 			file.write(iv)
 			file.write(ciphertext)
 
+	def get_credentials(self, domain):
+		try:
+			credentials = self._data[domain.lower()][1]
+		except KeyError:
+			raise CredentialsDoNotExist
+
+		return sorted(credentials.items(), key=lambda token: token[0])
+
+	def get_domains(self):
+		return [domain for _, (domain, _) in sorted(self._data.items(), key=lambda pair: pair[0])]
+
+	def store_credentials(self, domain, username, password, override=False):
+		domain_lower = domain.lower()
+
+		if domain_lower not in self._data:
+			credentials = {}
+		else:
+			credentials = self._data[domain_lower][1]
+
+			if not override and username in credentials:
+				raise CredentialsAlreadytExist
+
+			if SINGLE_PASSWORD in credentials:
+				if not override:
+					raise CredentialsAlreadytExist
+
+				credentials = {}
+
+		credentials[username] = password
+		self._data[domain_lower] = (domain, credentials)
+		self._write()
+
+	def store_password(self, domain, password, override=False):
+		domain_lower = domain.lower()
+
+		if not override and domain_lower in self._data:
+			raise CredentialsAlreadytExist
+
+		self._data[domain_lower] = (domain, {SINGLE_PASSWORD: password})
+		self._write()
+
+	def delete_credentials(self, domain, username):
+		domain_lower = domain.lower()
+
+		try:
+			credentials = self._data[domain_lower][1]
+			del credentials[username]
+		except KeyError:
+			raise CredentialsDoNotExist
+
+		if not credentials:
+			del self._data[domain_lower]
+
+		self._write()
+
+	def delete_domain(self, domain):
+		try:
+			del self._data[domain.lower()]
+		except KeyError:
+			raise CredentialsDoNotExist
+
+		self._write()
+
 	def change_passphrase(self, passphrase):
 		self._init_key(passphrase, os.urandom(SALT_SIZE))
 		self._write()
 
 	@classmethod
-	def decrypt(cls, data, passphrase):
+	def decrypt(cls, ciphertext, passphrase):
 		try:
-			salt, iv = cls._header_struct.unpack_from(data)
+			salt, iv = cls._header_struct.unpack_from(ciphertext)
 		except struct.error:
 			raise WrongPassphraseOrBrokenDatabase
 
@@ -98,18 +142,18 @@ class Database(collections.MutableMapping):
 		db._init_key(passphrase, salt)
 
 		cipher = db._get_cipher(iv)
-		ciphertext = data[cls._header_struct.size:]
+		ciphertext = ciphertext[cls._header_struct.size:]
 
 		try:
-			passwords = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
+			data = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
 		except ValueError:
 			raise WrongPassphraseOrBrokenDatabase
 
-		if not isinstance(passwords, dict):
+		if not isinstance(data, dict):
 			raise WrongPassphraseOrBrokenDatabase
 
-		for nickname, password in passwords.items():
-			db._set_item(nickname, password)
+		for domain, credentials in data.items():
+			db._data[domain.lower()] = (domain, credentials)
 
 		return db
 

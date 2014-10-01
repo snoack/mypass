@@ -19,7 +19,7 @@ import json
 import re
 import urllib.parse
 
-from mypass import UnknownNickname, WrongPassphraseOrBrokenDatabase
+from mypass import CredentialsDoNotExist, WrongPassphraseOrBrokenDatabase
 from mypass.client import Client
 
 def parse_request(length_bytes):
@@ -33,7 +33,7 @@ def send_response(message):
 	sys.stdout.buffer.write(data)
 	sys.stdout.buffer.flush()
 
-def get_possible_nicknames(url):
+def get_possible_domains(url):
 	parsed = urllib.parse.urlparse(url)
 	parts = parsed.path.split('/')
 
@@ -77,19 +77,19 @@ class NativeMessagingHost:
 
 		return {'status': 'ok'}
 
-	def _handle_get_password(self, client, request):
+	def _handle_get_credentials(self, client, request):
 		if client.status == Client.DATABASE_LOCKED:
 			return {'status': 'database-locked'}
 
-		for nickname in get_possible_nicknames(request['url']):
+		for domain in get_possible_domains(request['url']):
 			try:
-				password = client.call('get', nickname)
-			except UnknownNickname:
+				credentials = client.call('get-credentials', domain)
+			except CredentialsDoNotExist:
 				continue
 
-			return {'status': 'ok', 'password': password}
+			return {'status': 'ok', 'credentials': [dict(zip(['username', 'password'], token)) for token in credentials]}
 
-		return {'status': 'no-password'}
+		return {'status': 'no-credentials'}
 
 	def _process_request(self, request):
 		with Client() as client:

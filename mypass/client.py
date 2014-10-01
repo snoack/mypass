@@ -17,7 +17,7 @@ import socket
 import signal
 import time
 
-from mypass import CommandError, ConnectionLost, SOCKET, DATABASE
+from mypass import Error, ConnectionLost, SOCKET, DATABASE
 
 class Client:
 	DATABASE_DOES_NOT_EXIST = 1
@@ -89,7 +89,7 @@ class Client:
 			except (BrokenPipeError, EOFError):
 				raise ConnectionLost
 
-		if isinstance(output, CommandError):
+		if isinstance(output, Error):
 			raise output
 
 		return output

@@ -58,7 +58,7 @@ function setLocked() {
 		tabId = parseInt(tabId);
 
 		showPageActionLocked(tabId);
-		chrome.tabs.sendMessage(tabId, {action: "conceal-password"});
+		chrome.tabs.sendMessage(tabId, {action: "conceal-credentials"});
 
 		for (var url in tabs[tabId])
 			tabs[tabId][url] = false;
@@ -71,7 +71,7 @@ function setUnlocked() {
 
 		for (var url in tabs[tabId]) {
 			if (!tabs[tabId][url]) {
-				revealPassword(tabId, url);
+				revealCredentials(tabId, url);
 				break;
 			}
 		}
@@ -108,11 +108,11 @@ function unlock(passphrase, callback) {
 	);
 }
 
-function revealPassword(tabId, url) {
+function revealCredentials(tabId, url) {
 	chrome.runtime.sendNativeMessage(
 		"org.wallunit.mypass",
 		{
-			action: "get-password",
+			action: "get-credentials",
 			url: url
 		},
 		function(response) {
@@ -121,13 +121,13 @@ function revealPassword(tabId, url) {
 					chrome.tabs.sendMessage(
 						tabId,
 						{
-							action: "reveal-password",
+							action: "reveal-credentials",
 							url: url,
-							password: response.password
+							credentials: response.credentials
 						}
 					);
 
-				case "no-password":
+				case "no-credentials":
 					showPageActionUnlocked(tabId);
 					setDetails(tabId, url, true);
 					setUnlocked();
@@ -157,8 +157,8 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 			unlock(message.passphrase, sendResponse);
 			return true;
 
-		case "request-password":
-			revealPassword(sender.tab.id, sender.url);
+		case "request-credentials":
+			revealCredentials(sender.tab.id, sender.url);
 			return false;
 	}
 });

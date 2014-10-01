@@ -16,39 +16,22 @@ import socket
 import select
 import errno
 
-from mypass import CommandError, UnknownNickname, NicknameAlreadyExists, SOCKET
+from mypass import Error, SOCKET
 
 TIMEOUT = 60 * 30
 
 class Daemon:
 	def __init__(self, db):
-		self._db = db
 		self._shutdown = False
 		self._connections = []
 
-	def _handle_get(self, nickname):
-		try:
-			return self._db[nickname]
-		except KeyError:
-			raise UnknownNickname
-
-	def _handle_add(self, nickname, password, override=False):
-		if not override and nickname in self._db:
-			raise NicknameAlreadyExists
-
-		self._db[nickname] = password
-
-	def _handle_remove(self, nickname):
-		try:
-			del self._db[nickname]
-		except KeyError:
-			raise UnknownNickname
-
-	def _handle_list(self):
-		return list(self._db)
-
-	def _handle_changepw(self, passphrase):
-		self._db.change_passphrase(passphrase)
+		self._handle_get_credentials    = db.get_credentials
+		self._handle_get_domains        = db.get_domains
+		self._handle_store_credentials  = db.store_credentials
+		self._handle_store_password     = db.store_password
+		self._handle_delete_credentials = db.delete_credentials
+		self._handle_delete_domain      = db.delete_domain
+		self._handle_change_passphrase  = db.change_passphrase
 
 	def _handle_shutdown(self):
 		self._shutdown = True
@@ -63,8 +46,8 @@ class Daemon:
 				return
 
 			try:
-				response = getattr(self, '_handle_' + cmd)(*args)
-			except CommandError as e:
+				response = getattr(self, '_handle_' + cmd.replace('-', '_'))(*args)
+			except Error as e:
 				response = e
 
 			pickle.dump(response, file)

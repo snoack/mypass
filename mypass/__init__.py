@@ -19,8 +19,13 @@ SOCKET = '/tmp/mypass-{}.sock'.format(getuser())
 class Error(Exception):
 	pass
 
-class CommandError(Error):
-	pass
+class CredentialsDoNotExist(Error):
+	def __str__(self):
+		return 'Credentials do not exist'
+
+class CredentialsAlreadytExist(Error):
+	def __str__(self):
+		return 'Credentials already exist'
 
 class WrongPassphraseOrBrokenDatabase(Error):
 	def __str__(self):
@@ -29,11 +34,3 @@ class WrongPassphraseOrBrokenDatabase(Error):
 class ConnectionLost(Error):
 	def __str__(self):
 		return 'Connection lost'
-
-class UnknownNickname(CommandError):
-	def __str__(self):
-		return 'Unkown nickname'
-
-class NicknameAlreadyExists(CommandError):
-	def __str__(self):
-		return 'Nickname already exists'
