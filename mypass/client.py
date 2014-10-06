@@ -19,19 +19,54 @@ from mypass import Error, ConnectionLost, SOCKET, DATABASE
 class Client:
 	DATABASE_DOES_NOT_EXIST = 1
 	DATABASE_LOCKED = 2
-	CONNECTED = 3
+	DATABASE_UNLOCKED = 3
 
-	def __init__(self):
-		try:
-			self._connect()
-		except FileNotFoundError:
+	if hasattr(socket, 'AF_UNIX') and hasattr(os, 'fork'):
+		def __init__(self):
 			try:
-				with open(DATABASE, 'rb') as file:
-					self._ciphertext = file.read()
+				self._connect()
 			except FileNotFoundError:
-				self.status = self.DATABASE_DOES_NOT_EXIST
-			else:
-				self.status = self.DATABASE_LOCKED
+				self._read_database()
+
+		def _connect(self):
+			sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+			try:
+				sock.connect(SOCKET)
+			except:
+				sock.close()
+				raise
+
+			self._socket = sock
+			self.status = self.DATABASE_UNLOCKED
+
+		def _set_database(self, db):
+			from mypass.daemon import spawn_daemon
+			spawn_daemon(db)
+			self._connect()
+
+		def call(self, command, *args):
+			with self._socket.makefile('rwb', 0) as file:
+				try:
+					pickle.dump((command, args), file)
+					output = pickle.load(file)
+				except (BrokenPipeError, EOFError):
+					raise ConnectionLost
+
+			if isinstance(output, Error):
+				raise output
+
+			return output
+	else:
+		def __init__(self):
+			self._read_database()
+
+		def _set_database(self, db):
+			self._db = db
+			self.status = self.DATABASE_UNLOCKED
+
+		def call(self, command, *args):
+			return getattr(self._db, command.replace('-', '_'))(*args)
 
 	def __enter__(self):
 		return self
@@ -39,22 +74,14 @@ class Client:
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.close()
 
-	def _connect(self):
-		sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
+	def _read_database(self):
 		try:
-			sock.connect(SOCKET)
-		except:
-			sock.close()
-			raise
-
-		self._socket = sock
-		self.status = self.CONNECTED
-
-	def _set_database(self, db):
-		from mypass.daemon import spawn_daemon
-		spawn_daemon(db)
-		self._connect()
+			with open(DATABASE, 'rb') as file:
+				self._ciphertext = file.read()
+		except FileNotFoundError:
+			self.status = self.DATABASE_DOES_NOT_EXIST
+		else:
+			self.status = self.DATABASE_LOCKED
 
 	def create_database(self, passphrase):
 		from mypass.storage import Database
@@ -65,19 +92,6 @@ class Client:
 		db = Database.decrypt(self._ciphertext, passphrase)
 		del self._ciphertext
 		self._set_database(db)
-
-	def call(self, command, *args):
-		with self._socket.makefile('rwb', 0) as file:
-			try:
-				pickle.dump((command, args), file)
-				output = pickle.load(file)
-			except (BrokenPipeError, EOFError):
-				raise ConnectionLost
-
-		if isinstance(output, Error):
-			raise output
-
-		return output
 
 	def close(self):
 		sock = getattr(self, '_socket', None)

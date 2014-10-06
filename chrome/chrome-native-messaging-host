@@ -72,7 +72,7 @@ class NativeMessagingHost:
 		return {'status': 'ok'}
 
 	def _handle_lock_database(self, client, request):
-		if client.status == Client.CONNECTED:
+		if client.status == Client.DATABASE_UNLOCKED:
 			client.call('shutdown')
 
 		return {'status': 'ok'}

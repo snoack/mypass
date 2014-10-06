@@ -92,12 +92,12 @@ class CLI:
 		subparser_changepw.set_defaults(fail_if_db_does_not_exist=True)
 
 		subparser_lock = subparsers.add_parser('lock', help='Closes the database and forgets the master passhrase')
-		subparser_lock.set_defaults(exit_if_disconnected=True)
+		subparser_lock.set_defaults(exit_if_db_locked=True)
 
 		self._args = parser.parse_args()
 
 	def _open_database(self):
-		if self._client.status != Client.CONNECTED and getattr(self._args, 'exit_if_disconnected', False):
+		if self._client.status != Client.DATABASE_UNLOCKED and getattr(self._args, 'exit_if_db_locked', False):
 			sys.exit(0)
 
 		if self._client.status == Client.DATABASE_DOES_NOT_EXIST:
