@@ -11,11 +11,8 @@
 # for more details.
 
 import os
-import sys
-import pickle
 import socket
-import signal
-import time
+import pickle
 
 from mypass import Error, ConnectionLost, SOCKET, DATABASE
 
@@ -25,10 +22,8 @@ class Client:
 	CONNECTED = 3
 
 	def __init__(self):
-		self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-
 		try:
-			self._sock.connect(SOCKET)
+			self._connect()
 		except (FileNotFoundError, ConnectionRefusedError):
 			try:
 				with open(DATABASE, 'rb') as file:
@@ -37,8 +32,6 @@ class Client:
 				self.status = self.DATABASE_DOES_NOT_EXIST
 			else:
 				self.status = self.DATABASE_LOCKED
-		else:
-			self.status = self.CONNECTED
 
 	def __enter__(self):
 		return self
@@ -46,43 +39,35 @@ class Client:
 	def __exit__(self, exc_type, exc_value, traceback):
 		self.close()
 
-	def _wait_for_connection(self):
-		start = time.time()
-		while True:
-			try:
-				self._sock.connect(SOCKET)
-				break
-			except (FileNotFoundError, ConnectionRefusedError):
-				if time.time() - start > 1:
-					raise
+	def _connect(self):
+		sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 
-	def _spawn_daemon(self, db):
-		if not os.fork():
-			self.close()
+		try:
+			sock.connect(SOCKET)
+		except:
+			sock.close()
+			raise
 
-			signal.signal(signal.SIGINT, signal.SIG_IGN)
-			signal.signal(signal.SIGHUP, signal.SIG_IGN)
-
-			from mypass.daemon import Daemon
-			Daemon(db).run()
-
-			sys.exit(0)
-
-		self._wait_for_connection()
+		self._socket = sock
 		self.status = self.CONNECTED
+
+	def _set_database(self, db):
+		from mypass.daemon import spawn_daemon
+		spawn_daemon(db)
+		self._connect()
 
 	def create_database(self, passphrase):
 		from mypass.storage import Database
-		self._spawn_daemon(Database.create(passphrase))
+		self._set_database(Database.create(passphrase))
 
 	def unlock_database(self, passphrase):
 		from mypass.storage import Database
 		db = Database.decrypt(self._ciphertext, passphrase)
 		del self._ciphertext
-		self._spawn_daemon(db)
+		self._set_database(db)
 
 	def call(self, command, *args):
-		with self._sock.makefile('rwb', 0) as file:
+		with self._socket.makefile('rwb', 0) as file:
 			try:
 				pickle.dump((command, args), file)
 				output = pickle.load(file)
@@ -95,4 +80,6 @@ class Client:
 		return output
 
 	def close(self):
-		self._sock.close()
+		sock = getattr(self, '_socket', None)
+		if sock:
+			sock.close()

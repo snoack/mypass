@@ -10,18 +10,22 @@
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 
+import sys
 import os
 import pickle
 import socket
 import select
 import errno
+import signal
 
 from mypass import Error, SOCKET
 
 TIMEOUT = 60 * 30
 
 class Daemon:
-	def __init__(self, db):
+	def __init__(self, sock, db):
+		self._socket = sock
+
 		self._shutdown = False
 		self._connections = []
 
@@ -52,44 +56,16 @@ class Daemon:
 
 			pickle.dump(response, file)
 
-	def _create_socket(self):
-		sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-		try:
-			try:
-				sock.bind(SOCKET)
-			except OSError as e:
-				if e.errno != errno.EADDRINUSE:
-					raise
-
-				os.unlink(SOCKET)
-				sock.bind(SOCKET)
-
-			sock.listen(5)
-			return sock
-		except:
-			self._destroy_socket(sock)
-			raise
-
-	def _destroy_socket(self, sock):
-		sock.close()
-
-		try:
-			os.unlink(SOCKET)
-		except FileNotFoundError:
-			pass
-
 	def run(self):
-		server_socket = self._create_socket()
 		try:
 			while True:
-				sockets = [server_socket] + self._connections
+				sockets = [self._socket] + self._connections
 				timeout = None if self._connections else TIMEOUT
 				sockets = select.select(sockets, [], [], timeout)[0]
 
 				for sock in sockets:
-					if sock is server_socket:
-						conn, _ = server_socket.accept()
-						self._connections.append(conn)
+					if sock is self._socket:
+						self._connections.append(sock.accept()[0])
 					else:
 						self._serve_request(sock)
 
@@ -99,4 +75,27 @@ class Daemon:
 			for conn in self._connections:
 				conn.close()
 
-			self._destroy_socket(server_socket)
+def spawn_daemon(db):
+	with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+		try:
+			sock.bind(SOCKET)
+		except OSError as e:
+			if e.errno != errno.EADDRINUSE:
+				raise
+
+			os.unlink(SOCKET)
+			sock.bind(SOCKET)
+		sock.listen(5)
+
+		if not os.fork():
+			try:
+				signal.signal(signal.SIGINT, signal.SIG_IGN)
+				signal.signal(signal.SIGHUP, signal.SIG_IGN)
+
+				Daemon(sock, db).run()
+				sys.exit(0)
+			finally:
+				try:
+					os.unlink(SOCKET)
+				except FileNotFoundError:
+					pass
