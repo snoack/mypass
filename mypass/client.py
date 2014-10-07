@@ -24,7 +24,7 @@ class Client:
 	def __init__(self):
 		try:
 			self._connect()
-		except (FileNotFoundError, ConnectionRefusedError):
+		except FileNotFoundError:
 			try:
 				with open(DATABASE, 'rb') as file:
 					self._ciphertext = file.read()

@@ -15,7 +15,6 @@ import os
 import pickle
 import socket
 import select
-import errno
 import signal
 
 from mypass import Error, SOCKET
@@ -75,27 +74,25 @@ class Daemon:
 			for conn in self._connections:
 				conn.close()
 
+def unlink_socket():
+	try:
+		os.unlink(SOCKET)
+	except FileNotFoundError:
+		pass
+
 def spawn_daemon(db):
 	with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-		try:
-			sock.bind(SOCKET)
-		except OSError as e:
-			if e.errno != errno.EADDRINUSE:
-				raise
-
-			os.unlink(SOCKET)
-			sock.bind(SOCKET)
+		sock.bind(SOCKET)
 		sock.listen(5)
 
 		if not os.fork():
 			try:
 				signal.signal(signal.SIGINT, signal.SIG_IGN)
 				signal.signal(signal.SIGHUP, signal.SIG_IGN)
+				signal.signal(signal.SIGTERM, unlink_socket)
 
 				Daemon(sock, db).run()
-				sys.exit(0)
 			finally:
-				try:
-					os.unlink(SOCKET)
-				except FileNotFoundError:
-					pass
+				unlink_socket()
+
+			sys.exit(0)
