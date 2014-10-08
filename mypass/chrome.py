@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-#
 # Copyright (c) 2014 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
@@ -97,6 +95,3 @@ class NativeMessagingHost:
 				return {'status': 'database-does-not-exist'}
 
 			return getattr(self, '_handle_' + request['action'].replace('-', '_'))(client, request)
-
-if __name__ == '__main__':
-	NativeMessagingHost()

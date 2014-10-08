@@ -1,11 +1,16 @@
 import sys
 
-from distutils.core import setup
-from distutils.command.install import install
-
 if sys.version_info[0] < 3:
 	sys.stderr.write('Only Python 3 supported\n')
 	sys.exit(1)
+
+import os
+import json
+from collections import OrderedDict
+
+from distutils import log
+from distutils.core import setup
+from distutils.command.install import install
 
 CHROME_NATIVE_MESSAGING_MANIFEST_DIRS = {
 	'linux': (
@@ -20,25 +25,37 @@ CHROME_NATIVE_MESSAGING_MANIFEST_DIRS = {
 
 class install_with_chrome(install):
 	user_options = install.user_options + [
-		('without-chrome', None, "Don't install native messaging host for Chrome extension"),
+		('without-chrome', None, "Don't install native messaging manifest for Chrome extension"),
 	]
+
+	def _create_manifest(self):
+		manifest = OrderedDict()
+		manifest['name'] = 'org.wallunit.mypass'
+		manifest['description'] = self.distribution.metadata.description
+		manifest['path'] = self.distribution.get_command_obj('install_scripts').get_outputs()[0]
+		manifest['type'] = 'stdio'
+		manifest['allowed_origins'] = ['chrome-extension://ddbeciaedkkgeiaellofogahfcolmkka/']
+		return manifest
 
 	def initialize_options(self):
 		super().initialize_options()
 		self.without_chrome = 0
 
-	def finalize_options(self):
-		super().finalize_options()
+	def run(self):
+		super().run()
 
 		if not self.without_chrome:
-			data_files = [
-				('/usr/local/lib/mypass', ['chrome/chrome-native-messaging-host'])
-			]
+			manifest = self._create_manifest()
 
 			for dir in CHROME_NATIVE_MESSAGING_MANIFEST_DIRS[sys.platform]:
-				data_files.append((dir, ['chrome/org.wallunit.mypass.json']))
+				self.mkpath(dir)
 
-			self.distribution.data_files = data_files
+				outfile = os.path.join(dir, manifest['name'] + '.json')
+				log.info("Writing %s", outfile)
+
+				if not self.dry_run:
+					with open(outfile, 'w') as file:
+						json.dump(manifest, file, indent='\t')
 
 cmdclass = {}
 if sys.platform in CHROME_NATIVE_MESSAGING_MANIFEST_DIRS:
