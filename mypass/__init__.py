@@ -10,13 +10,14 @@
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 
-import os
 from getpass import getuser
 
-DATABASE = os.path.expanduser('~/.config/mypass')
 SOCKET = '/tmp/mypass-{}.sock'.format(getuser())
 
 class Error(Exception):
+	pass
+
+class ConfigError(Error):
 	pass
 
 class CredentialsDoNotExist(Error):

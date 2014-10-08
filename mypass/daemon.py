@@ -18,8 +18,7 @@ import select
 import signal
 
 from mypass import Error, SOCKET
-
-TIMEOUT = 60 * 30
+from mypass.config import config
 
 class Daemon:
 	def __init__(self, sock, db):
@@ -59,7 +58,7 @@ class Daemon:
 		try:
 			while True:
 				sockets = [self._socket] + self._connections
-				timeout = None if self._connections else TIMEOUT
+				timeout = None if self._connections else config['daemon']['timeout'] * 60
 				sockets = select.select(sockets, [], [], timeout)[0]
 
 				for sock in sockets:

@@ -20,7 +20,7 @@ import Crypto.Hash.SHA256
 import Crypto.Protocol.KDF
 
 from mypass import CredentialsDoNotExist, CredentialsAlreadytExist, WrongPassphraseOrBrokenDatabase
-from mypass import DATABASE
+from mypass.config import config
 
 KEY_SIZE = 32
 SALT_SIZE = 48
@@ -53,11 +53,12 @@ class Database:
 		iv = os.urandom(block_size)
 		ciphertext = self._get_cipher(iv).encrypt(plaintext)
 
+		filename = config['database']['path']
 		try:
-			file = open(DATABASE, 'wb')
+			file = open(filename, 'wb')
 		except FileNotFoundError:
-			os.makedirs(os.path.dirname(DATABASE))
-			file = open(DATABASE, 'wb')
+			os.makedirs(os.path.dirname(filename))
+			file = open(filename, 'wb')
 
 		with file:
 			file.write(self._salt)

@@ -14,15 +14,18 @@ import os
 import socket
 import pickle
 
-from mypass import Error, ConnectionLost, SOCKET, DATABASE
+from mypass import Error, ConnectionLost, SOCKET
+from mypass.config import config, check_config_errors
 
 class Client:
 	DATABASE_DOES_NOT_EXIST = 1
 	DATABASE_LOCKED = 2
 	DATABASE_UNLOCKED = 3
 
-	if hasattr(socket, 'AF_UNIX') and hasattr(os, 'fork'):
+	if hasattr(socket, 'AF_UNIX') and hasattr(os, 'fork') and not config['daemon']['disabled']:
 		def __init__(self):
+			check_config_errors()
+
 			try:
 				self._connect()
 			except FileNotFoundError:
@@ -59,6 +62,7 @@ class Client:
 			return output
 	else:
 		def __init__(self):
+			check_config_errors()
 			self._read_database()
 
 		def _set_database(self, db):
@@ -76,7 +80,7 @@ class Client:
 
 	def _read_database(self):
 		try:
-			with open(DATABASE, 'rb') as file:
+			with open(config['database']['path'], 'rb') as file:
 				self._ciphertext = file.read()
 		except FileNotFoundError:
 			self.status = self.DATABASE_DOES_NOT_EXIST
