@@ -83,6 +83,12 @@ class CLI:
 		subparser_remove.add_argument('username', nargs='?')
 		subparser_remove.set_defaults(fail_if_db_does_not_exist=True)
 
+		subparser_rename = subparsers.add_parser('rename', help='Changes the domain and/or username of saved passwords')
+		subparser_rename.add_argument('old_domain')
+		subparser_rename.add_argument('old_username', nargs='?')
+		subparser_rename.add_argument('--new-domain')
+		subparser_rename.add_argument('--new-username')
+
 		subparser_list = subparsers.add_parser('list', help='Writes the domains of all passwords to stdout')
 		subparser_list.set_defaults(exit_if_db_does_not_exist=True)
 
@@ -111,6 +117,16 @@ class CLI:
 		if self._client.status == Client.DATABASE_LOCKED:
 			self._client.unlock_database(getpass('Unlock database: '))
 
+	def _check_override(self, *args):
+		try:
+			self._client.call(*args)
+		except CredentialsAlreadytExist:
+			if input('Credentials already exist. Do you want to override them? [y/N] ')[:1].lower() != 'y':
+				print('Aborted', file=sys.stderr)
+				sys.exit(1)
+
+			self._client.call(*(args + (True,)))
+
 	def _call_get(self):
 		credentials = self._client.call('get-credentials', self._args.domain)
 
@@ -129,18 +145,9 @@ class CLI:
 		password = password or self._args.password or getpass()
 
 		if username:
-			args = ['store-credentials', domain, username, password]
+			self._check_override('store-credentials', domain, username, password)
 		else:
-			args = ['store-password', domain, password]
-
-		try:
-			self._client.call(*args)
-		except CredentialsAlreadytExist:
-			if input('Credentials already exist. Do you want to override them? [y/N] ')[:1].lower() != 'y':
-				print('Aborted', file=sys.stderr)
-				sys.exit(1)
-
-			self._client.call(*(args + [True]))
+			self._check_override('store-password', domain, password)
 
 	def _call_new(self):
 		password = generate_password()
@@ -155,6 +162,17 @@ class CLI:
 			self._client.call('delete-credentials', domain, username)
 		else:
 			self._client.call('delete-domain', domain)
+
+	def _call_rename(self):
+		old_domain = self._args.old_domain
+		new_domain = self._args.new_domain
+
+		if new_domain is None:
+			new_domain = old_domain
+
+		self._check_override('rename-credentials', old_domain, new_domain,
+		                                           self._args.old_username,
+		                                           self._args.new_username)
 
 	def _call_list(self):
 		for domain in self._client.call('get-domains'):

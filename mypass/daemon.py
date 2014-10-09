@@ -33,6 +33,7 @@ class Daemon:
 		self._handle_store_password     = db.store_password
 		self._handle_delete_credentials = db.delete_credentials
 		self._handle_delete_domain      = db.delete_domain
+		self._handle_rename_credentials = db.rename_credentials
 		self._handle_change_passphrase  = db.change_passphrase
 
 	def _handle_shutdown(self):

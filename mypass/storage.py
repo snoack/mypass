@@ -128,6 +128,55 @@ class Database:
 
 		self._write()
 
+	def rename_credentials(self, old_domain, new_domain, old_username=None, new_username=None, override=False):
+		old_domain_lower = old_domain.lower()
+
+		try:
+			record = self._data[old_domain_lower]
+		except KeyError:
+			raise CredentialsDoNotExist
+		credentials = record[1]
+
+		try:
+			if old_username:
+				try:
+					password = credentials.pop(old_username)
+				except KeyError:
+					raise CredentialsDoNotExist
+
+				try:
+					if not credentials:
+						del self._data[old_domain_lower]
+
+					if new_username:
+						self.store_credentials(new_domain, new_username, password, override)
+					else:
+						self.store_password(new_domain, password, override)
+				except:
+					credentials[old_username] = password
+					raise
+			else:
+				del self._data[old_domain_lower]
+
+				if new_username:
+					try:
+						password = credentials[SINGLE_PASSWORD]
+					except KeyError:
+						raise CredentialsDoNotExist
+
+					self.store_credentials(new_domain, new_username, password, override)
+				else:
+					new_domain_lower = new_domain.lower()
+
+					if not override and new_domain_lower in self._data:
+						raise CredentialsAlreadytExist
+
+					self._data[new_domain_lower] = (new_domain, credentials)
+					self._write()
+		except:
+			self._data[old_domain_lower] = record
+			raise
+
 	def change_passphrase(self, passphrase):
 		self._init_key(passphrase, os.urandom(SALT_SIZE))
 		self._write()
