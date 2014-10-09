@@ -2,6 +2,14 @@
 body {
 	font-family: sans-serif;
 	font-size: 14px;
+	min-width: 200px;
+}
+
+body > div:not(.active) {
+	display: none;
+}
+
+#database-locked {
 	white-space: nowrap;
 }
 
@@ -11,6 +19,20 @@ body {
 }
 </style>
 
-Unlock database: <input type="password" id="passphrase" autofocus>
+<div id="database-locked">
+	Unlock database: <input type="password" id="passphrase" autofocus>
+</div>
+
+<div id="database-does-not-exist">
+	It seems this is the first time you use mypass. You have to add some passwords and create the database, before you can use the Chrome extension.
+</div>
+
+<div id="not-installed">
+	Failed to connect native application. In order to use this Chrome extension you have to <a href="https://github.com/wallunit/mypass">install mypass</a>.
+</div>
+
+<div id="os-not-supported">
+	This extension is only supported on <strong>Linux</strong> and <strong>OS X</strong>.
+</div>
 
 <script src="popup.js"></script>

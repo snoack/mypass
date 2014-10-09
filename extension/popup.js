@@ -12,28 +12,53 @@
  * for more details.
  */
 
-var input = document.getElementById("passphrase");
-
-input.addEventListener("keyup", function(event) {
-	if (event.keyCode != 13)
-		return;
-
+function showRelevantContent() {
 	chrome.runtime.sendMessage(
 		{
-			action: "unlock-database",
-			passphrase: input.value
+			action: "get-last-error"
 		},
-		function(success) {
-			if (success) {
-				window.close();
-			} else {
-				input.classList.add("error");
-				input.value = "";
-			}
+		function(id) {
+			document.getElementById(id).classList.add("active");
 		}
 	);
-});
+}
 
-input.addEventListener("input", function(event) {
-	input.classList.remove("error");
-});
+function setupPassphraseInput() {
+	var input = document.getElementById("passphrase");
+
+	input.addEventListener("keyup", function(event) {
+		if (event.keyCode != 13)
+			return;
+
+		chrome.runtime.sendMessage(
+			{
+				action: "unlock-database",
+				passphrase: input.value
+			},
+			function(success) {
+				if (success) {
+					window.close();
+				} else {
+					input.classList.add("error");
+					input.value = "";
+				}
+			}
+		);
+	});
+
+	input.addEventListener("input", function(event) {
+		input.classList.remove("error");
+	});
+}
+
+function setupLinks() {
+	[].forEach.call(document.querySelectorAll("a[href]"), function(link) {
+		link.addEventListener("click", function(event) {
+			chrome.tabs.create({url: link.href});
+		});
+	});
+}
+
+showRelevantContent();
+setupPassphraseInput();
+setupLinks();

@@ -13,6 +13,7 @@
  */
 
 var tabs = {__proto__: null};
+var lastError = null;
 
 function setDetails(tabId, url, revealed) {
 	var urls = tabs[tabId];
@@ -108,6 +109,16 @@ function unlock(passphrase, callback) {
 	);
 }
 
+function errorFromResponse(response) {
+	if (response)
+		return response.status;
+
+	if (/^(Linux\b|MacIntel$)/.test(navigator.platform))
+		return "not-installed";
+
+	return "os-not-supported";
+}
+
 function revealCredentials(tabId, url) {
 	chrome.runtime.sendNativeMessage(
 		"org.wallunit.mypass",
@@ -116,7 +127,7 @@ function revealCredentials(tabId, url) {
 			url: url
 		},
 		function(response) {
-			switch (response.status) {
+			switch (response && response.status) {
 				case "ok":
 					chrome.tabs.sendMessage(
 						tabId,
@@ -133,7 +144,8 @@ function revealCredentials(tabId, url) {
 					setUnlocked();
 					break;
 
-				case "database-locked":
+				default:
+					lastError = errorFromResponse(response);
 					setDetails(tabId, url, false);
 					setLocked();
 					break;
@@ -159,6 +171,10 @@ chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
 
 		case "request-credentials":
 			revealCredentials(sender.tab.id, sender.url);
+			return false;
+
+		case "get-last-error":
+			sendResponse(lastError);
 			return false;
 	}
 });
