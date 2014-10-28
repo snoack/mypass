@@ -113,7 +113,7 @@ function errorFromResponse(response) {
 	if (response)
 		return response.status;
 
-	if (/^(Linux\b|MacIntel$)/.test(navigator.platform))
+	if (/^(Linux\b|MacIntel$)/.test(navigator.platform) && !/\bCrOS\b/.test(navigator.userAgent))
 		return "not-installed";
 
 	return "os-not-supported";
