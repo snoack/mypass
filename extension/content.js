@@ -12,62 +12,143 @@
  * for more details.
  */
 
-function Field(element) {
-	this.element = element;
+function Form(usernameInput, passwordInputs) {
+	this._usernameInput  = usernameInput;
+	this._passwordInputs = passwordInputs;
 
-	this._oldValue = null;
-	this._newElement = null;
-
-	element.addEventListener("change", this._onChange.bind(this));
+	this._changedValues  = [];
+	this._usernameSelect = null;
 }
-Field.prototype = {
-	_onChange: function() {
-		this._oldValue = null;
-	},
+Form.prototype = {
+	_set: function(element, value) {
+		var onInput = function() {
+			var idx = this._changedValues.indexOf(changeInfo);
+			if (idx != -1)
+				this._changedValues.splice(idx, 1);
 
-	set: function(value) {
-		this._oldValue = this.element.value;
-		this.element.value = value;
+			element.removeEventListener("input", onInput);
+		}.bind(this);
+
+		var changeInfo = {
+			element:  element,
+			oldValue: element.value,
+			onInput:  onInput
+		};
+		this._changedValues.push(changeInfo);
+
+		element.value = value;
+		element.addEventListener("input", onInput);
+	},
+	_replace: function(newElement, oldElement) {
+		this._replacedElements.push({
+			oldElement: oldElement,
+			newElement: newElement
+		});
+
+		oldElement.parentNode.replaceChild(newElement, oldElement);
+	},
+	_createUsernameSelect: function(credentials, selected) {
+		this._usernameSelect = document.createElement("select");
+
+		this._usernameSelect.style.height  = this._usernameInput.offsetHeight + 'px';
+		this._usernameSelect.style.width   = this._usernameInput.offsetWidth  + 'px';
+		this._usernameSelect.style.display = getComputedStyle(this._usernameInput).display;
+
+		for (var i = 0; i < credentials.length; i++) {
+			var username = credentials[i].username;
+			var option = document.createElement("option");
+
+			if (username == selected)
+				option.setAttribute("selected", "selected");
+
+			option.value = option.textContent = username;
+			this._usernameSelect.appendChild(option);
+		}
+
+		this._usernameSelect.addEventListener("change", function() {
+			var username = this._usernameSelect.value;
+			this._set(this._usernameInput, username);
+
+			var password = getPassword(credentials, username);
+			for (var i = 0; i < this._passwordInputs.length; i++)
+				this._set(this._passwordInputs[i], password);
+		}.bind(this));
+
+		this._usernameInputDisplayValue    = this._usernameInput.style.getPropertyValue("display");
+		this._usernameInputDisplayPriority = this._usernameInput.style.getPropertyPriority("display");
+
+		this._usernameInput.style.setProperty("display", "none", "important");
+		this._usernameInput.parentNode.insertBefore(this._usernameSelect, this._usernameInput);
+	},
+	fill: function(credentials) {
+		var username = credentials[0].username;
+		var password = credentials[0].password;
+
+		if (this._usernameInput) {
+			if (credentials.length > 1) {
+				var username_ = this._usernameInput.value;
+				var password_ = getPassword(credentials, username_);
+
+				if (password_ != null) {
+					username = username_;
+					password = password_;
+				}
+
+				this._createUsernameSelect(credentials, username);
+			}
+
+			if (username)
+				this._set(this._usernameInput, username);
+		}
+
+		for (var i = 0; i < this._passwordInputs.length; i++)
+			this._set(this._passwordInputs[i], password);
 	},
 	restore: function() {
-		if (this._oldValue != null) {
-			this.element.value = this._oldValue;
-			this._oldValue = null;
+		while (this._changedValues.length > 0) {
+			var changeInfo = this._changedValues.shift();
+			var element = changeInfo.element;
+
+			element.removeEventListener("input", changeInfo.onInput);
+			element.value = changeInfo.oldValue;
 		}
 
-		if (this._newElement != null) {
-			this._newElement.parentNode.replaceChild(this.element, this._newElement);
-			this._newElement = null;
+		if (this._usernameSelect) {
+			this._usernameSelect.parentNode.removeChild(this._usernameSelect);
+			this._usernameSelect = null;
+
+			this._usernameInput.style.setProperty(
+				"display", this._usernameInputDisplayValue,
+				           this._usernameInputDisplayPriority
+			);
 		}
-	},
-	replace: function(element) {
-		element.name = this.element.name;
-
-		element.style.height  = this.element.offsetHeight + 'px';
-		element.style.width   = this.element.offsetWidth  + 'px';
-		element.style.display = getComputedStyle(this.element).display;
-
-		this.element.parentNode.replaceChild(element, this.element);
-		this._newElement = element;
 	}
 };
 
-function findFields() {
-	var usernameField = null;
-	var passwordField = null;
+function findForms() {
+	var forms = [];
 
-	var passwordInput = document.querySelector("input[type=password]");
-	if (passwordInput) {
-		passwordField = new Field(passwordInput);
+	var passwordInputs = document.querySelectorAll("input[type=password]");
+	var seenFormElements = [];
 
-		if (passwordInput.form) {
-			var usernameInput = passwordInput.form.querySelector("input[type=text],input[type=email]");
-			if (usernameInput)
-				usernameField = new Field(usernameInput);
+	for (var i = 0; i < passwordInputs.length; i++)
+	{
+		var passwordInput = passwordInputs[i];
+		var formElement = passwordInput.form;
+
+		if (!formElement)
+			forms.push(new Form(null, [passwordInput]));
+		else if (seenFormElements.indexOf(formElement) == -1) {
+			forms.push(new Form(
+				formElement.querySelector("input[type=text],input[type=email]"),
+				formElement.querySelectorAll("input[type=password]")
+			));
+
+			seenFormElements.push(formElement);
 		}
 	}
 
-	return {username: usernameField, password: passwordField};
+	return forms;
 }
 
 function getPassword(credentials, username) {
@@ -79,63 +160,19 @@ function getPassword(credentials, username) {
 	}
 }
 
-function createUsernameSelect(credentials, selected) {
-	var select = document.createElement("select");
-
-	for (var i = 0; i < credentials.length; i++) {
-		var username = credentials[i].username;
-		var option = document.createElement("option");
-
-		if (username == selected)
-			option.setAttribute("selected", "selected");
-
-		option.value = option.textContent = username;
-		select.appendChild(option);
-	}
-
-	select.addEventListener("change", function(event) {
-		fields.password.set(getPassword(credentials, select.value));
-	});
-
-	return select;
-}
-
-var fields = findFields();
-if (fields.password) {
+var forms = findForms();
+if (forms.length > 0) {
 	chrome.runtime.onMessage.addListener(function(message) {
 		switch (message.action) {
 			case "reveal-credentials":
-				if (message.url == location.href) {
-					var credentials = message.credentials;
-
-					var username = credentials[0].username;
-					var password = credentials[0].password;
-
-					if (fields.username) {
-						if (credentials.length > 1) {
-							var username_ = fields.username.element.value;
-							var password_ = getPassword(credentials, username_);
-
-							if (password != null) {
-								username = username_;
-								password = password_;
-							}
-
-							fields.username.replace(createUsernameSelect(credentials, username));
-						} else if (username) {
-							fields.username.set(username);
-						}
-					}
-
-					fields.password.set(password);
-				}
+				if (message.url == location.href)
+					for (var i = 0; i < forms.length; i++)
+						forms[i].fill(message.credentials);
 				break;
 
 			case "conceal-credentials":
-				if (fields.username)
-					fields.username.restore();
-
-				fields.password.restore();
+				for (var i = 0; i < forms.length; i++)
+					forms[i].restore();
 				break;
 		}
 	});
