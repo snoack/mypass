@@ -140,7 +140,7 @@ function findForms() {
 			forms.push(new Form(null, [passwordInput]));
 		else if (seenFormElements.indexOf(formElement) == -1) {
 			forms.push(new Form(
-				formElement.querySelector("input[type=text],input[type=email]"),
+				formElement.querySelector("input[type=text],input[type=email],input:not([type])"),
 				formElement.querySelectorAll("input[type=password]")
 			));
 
