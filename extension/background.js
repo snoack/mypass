@@ -81,7 +81,7 @@ function setUnlocked() {
 
 function lock() {
 	chrome.runtime.sendNativeMessage(
-		"org.wallunit.mypass",
+		"org.snoack.mypass",
 		{
 			action: "lock-database"
 		}
@@ -92,7 +92,7 @@ function lock() {
 
 function unlock(passphrase, callback) {
 	chrome.runtime.sendNativeMessage(
-		"org.wallunit.mypass",
+		"org.snoack.mypass",
 		{
 			action: "unlock-database",
 			passphrase: passphrase
@@ -121,7 +121,7 @@ function errorFromResponse(response) {
 
 function revealCredentials(tabId, url) {
 	chrome.runtime.sendNativeMessage(
-		"org.wallunit.mypass",
+		"org.snoack.mypass",
 		{
 			action: "get-credentials",
 			url: url

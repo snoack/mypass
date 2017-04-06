@@ -30,7 +30,7 @@ class install_with_chrome(install):
 
 	def _create_manifest(self):
 		manifest = OrderedDict()
-		manifest['name'] = 'org.wallunit.mypass'
+		manifest['name'] = 'org.snoack.mypass'
 		manifest['description'] = self.distribution.metadata.description
 		manifest['path'] = self.distribution.get_command_obj('install_scripts').get_outputs()[0]
 		manifest['type'] = 'stdio'
@@ -65,7 +65,7 @@ setup(
 	name='mypass',
 	description='A password manager',
 	author='Sebastian Noack',
-	url='https://github.com/wallunit/mypass',
+	url='https://github.com/snoack/mypass',
 	version='1.0',
 	packages=['mypass'],
 	scripts=['bin/mypass'],
