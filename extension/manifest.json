@@ -20,5 +20,9 @@
 			"matches": ["http://*/*", "https://*/*"]
 		}
 	],
+	"icons": {
+		"19": "icons/locked-19.png",
+		"38": "icons/locked-38.png"
+	},
 	"page_action": {}
 }
