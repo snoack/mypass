@@ -24,32 +24,17 @@ function setDetails(tabId, url, revealed) {
   urls[url] = revealed;
 }
 
-function showPageActionLocked(tabId) {
+function showPageAction(tabId, state) {
   chrome.pageAction.setIcon({
     tabId: tabId,
     path: {
-      "19": "icons/locked-19.png",
-      "38": "icons/locked-38.png"
+      "19": "icons/" + state + "-19.png",
+      "38": "icons/" + state + "-38.png"
     }
   });
   chrome.pageAction.setPopup({
     tabId: tabId,
-    popup: "popup.html"
-  });
-  chrome.pageAction.show(tabId);
-}
-
-function showPageActionUnlocked(tabId) {
-  chrome.pageAction.setIcon({
-    tabId: tabId,
-    path: {
-      "19": "icons/unlocked-19.png",
-      "38": "icons/unlocked-38.png"
-    }
-  });
-  chrome.pageAction.setPopup({
-    tabId: tabId,
-    popup: ""
+    popup: state == "locked" ? "popup.html" : ""
   });
   chrome.pageAction.show(tabId);
 }
@@ -58,7 +43,7 @@ function setLocked() {
   for (var tabId in tabs) {
     tabId = parseInt(tabId);
 
-    showPageActionLocked(tabId);
+    showPageAction(tabId, "locked");
     chrome.tabs.sendMessage(tabId, {action: "conceal-credentials"});
 
     for (var url in tabs[tabId])
@@ -139,7 +124,7 @@ function revealCredentials(tabId, url) {
           );
 
         case "no-credentials":
-          showPageActionUnlocked(tabId);
+          showPageAction(tabId, "unlocked");
           setDetails(tabId, url, true);
           setUnlocked();
           break;
