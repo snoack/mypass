@@ -20,78 +20,83 @@ import urllib.parse
 from mypass import CredentialsDoNotExist, WrongPassphraseOrBrokenDatabase
 from mypass.client import Client
 
+
 def parse_request(length_bytes):
-	length = struct.unpack('I', length_bytes)[0]
-	data = sys.stdin.buffer.read(length)
-	return json.loads(data.decode('utf-8'))
+    length = struct.unpack('I', length_bytes)[0]
+    data = sys.stdin.buffer.read(length)
+    return json.loads(data.decode('utf-8'))
+
 
 def send_response(message):
-	data = json.dumps(message).encode('utf-8')
-	sys.stdout.buffer.write(struct.pack('I', len(data)))
-	sys.stdout.buffer.write(data)
-	sys.stdout.buffer.flush()
+    data = json.dumps(message).encode('utf-8')
+    sys.stdout.buffer.write(struct.pack('I', len(data)))
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
+
 
 def get_possible_domains(url):
-	parsed = urllib.parse.urlparse(url)
-	parts = parsed.path.split('/')
+    parsed = urllib.parse.urlparse(url)
+    parts = parsed.path.split('/')
 
-	while parts:
-		yield parsed.netloc + '/'.join(parts)
+    while parts:
+        yield parsed.netloc + '/'.join(parts)
 
-		tail = parts.pop()
-		if tail != '':
-			parts.append('')
+        tail = parts.pop()
+        if tail != '':
+            parts.append('')
 
-	if re.search(r'[^0-9.:]', parsed.netloc):
-		parts = parsed.netloc.split('.')
+    if re.search(r'[^0-9.:]', parsed.netloc):
+        parts = parsed.netloc.split('.')
 
-		while len(parts) > 2:
-			del parts[0]
-			yield '.'.join(parts)
+        while len(parts) > 2:
+            del parts[0]
+            yield '.'.join(parts)
+
 
 class NativeMessagingHost:
-	def __init__(self):
-		os.umask(0o077)
 
-		while True:
-			length_bytes = sys.stdin.buffer.read(4)
-			if not length_bytes:
-				break
+    def __init__(self):
+        os.umask(0o077)
 
-			send_response(self._process_request(parse_request(length_bytes)))
+        while True:
+            length_bytes = sys.stdin.buffer.read(4)
+            if not length_bytes:
+                break
 
-	def _handle_unlock_database(self, client, request):
-		if client.status == Client.DATABASE_LOCKED:
-			try:
-				client.unlock_database(request['passphrase'])
-			except WrongPassphraseOrBrokenDatabase:
-				return {'status': 'failure'}
+            send_response(self._process_request(parse_request(length_bytes)))
 
-		return {'status': 'ok'}
+    def _handle_unlock_database(self, client, request):
+        if client.status == Client.DATABASE_LOCKED:
+            try:
+                client.unlock_database(request['passphrase'])
+            except WrongPassphraseOrBrokenDatabase:
+                return {'status': 'failure'}
 
-	def _handle_lock_database(self, client, request):
-		if client.status == Client.DATABASE_UNLOCKED:
-			client.call('shutdown')
+        return {'status': 'ok'}
 
-		return {'status': 'ok'}
+    def _handle_lock_database(self, client, request):
+        if client.status == Client.DATABASE_UNLOCKED:
+            client.call('shutdown')
 
-	def _handle_get_credentials(self, client, request):
-		if client.status == Client.DATABASE_LOCKED:
-			return {'status': 'database-locked'}
+        return {'status': 'ok'}
 
-		for domain in get_possible_domains(request['url']):
-			try:
-				credentials = client.call('get-credentials', domain)
-			except CredentialsDoNotExist:
-				continue
+    def _handle_get_credentials(self, client, request):
+        if client.status == Client.DATABASE_LOCKED:
+            return {'status': 'database-locked'}
 
-			return {'status': 'ok', 'credentials': [dict(zip(['username', 'password'], token)) for token in credentials]}
+        for domain in get_possible_domains(request['url']):
+            try:
+                credentials = client.call('get-credentials', domain)
+            except CredentialsDoNotExist:
+                continue
 
-		return {'status': 'no-credentials'}
+            return {'status': 'ok', 'credentials': [dict(zip(['username', 'password'], token)) for token in credentials]}
 
-	def _process_request(self, request):
-		with Client() as client:
-			if client.status == Client.DATABASE_DOES_NOT_EXIST:
-				return {'status': 'database-does-not-exist'}
+        return {'status': 'no-credentials'}
 
-			return getattr(self, '_handle_' + request['action'].replace('-', '_'))(client, request)
+    def _process_request(self, request):
+        with Client() as client:
+            if client.status == Client.DATABASE_DOES_NOT_EXIST:
+                return {'status': 'database-does-not-exist'}
+
+            return getattr(self, '_handle_' + request['action'].replace('-', '_'))(client, request)

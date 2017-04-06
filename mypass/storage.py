@@ -28,187 +28,188 @@ ITERATIONS = 10000
 
 SINGLE_PASSWORD = ''
 
+
 class Database:
-	_header_struct = struct.Struct('{}s{}s'.format(SALT_SIZE, Crypto.Cipher.AES.block_size))
+    _header_struct = struct.Struct('{}s{}s'.format(SALT_SIZE, Crypto.Cipher.AES.block_size))
 
-	def __init__(self):
-		self._data = {}
+    def __init__(self):
+        self._data = {}
 
-	def _init_key(self, passphrase, salt):
-		self._key = Crypto.Protocol.KDF.PBKDF2(
-			passphrase.encode('utf-8'), salt, KEY_SIZE, ITERATIONS,
-			lambda p, s: Crypto.Hash.HMAC.new(p, s, Crypto.Hash.SHA256).digest()
-		)
-		self._salt = salt
+    def _init_key(self, passphrase, salt):
+        self._key = Crypto.Protocol.KDF.PBKDF2(
+            passphrase.encode('utf-8'), salt, KEY_SIZE, ITERATIONS,
+                lambda p, s: Crypto.Hash.HMAC.new(p, s, Crypto.Hash.SHA256).digest()
+        )
+        self._salt = salt
 
-	def _get_cipher(self, iv):
-		return Crypto.Cipher.AES.new(self._key, Crypto.Cipher.AES.MODE_CBC, iv)
+    def _get_cipher(self, iv):
+        return Crypto.Cipher.AES.new(self._key, Crypto.Cipher.AES.MODE_CBC, iv)
 
-	def _write(self):
-		block_size = Crypto.Cipher.AES.block_size
+    def _write(self):
+        block_size = Crypto.Cipher.AES.block_size
 
-		plaintext = json.dumps(dict(self._data.values()), ensure_ascii=False).encode('utf-8')
-		plaintext += b' ' * (block_size - len(plaintext) % block_size)
+        plaintext = json.dumps(dict(self._data.values()), ensure_ascii=False).encode('utf-8')
+        plaintext += b' ' * (block_size - len(plaintext) % block_size)
 
-		iv = os.urandom(block_size)
-		ciphertext = self._get_cipher(iv).encrypt(plaintext)
+        iv = os.urandom(block_size)
+        ciphertext = self._get_cipher(iv).encrypt(plaintext)
 
-		filename = config['database']['path']
-		try:
-			file = open(filename, 'wb')
-		except FileNotFoundError:
-			os.makedirs(os.path.dirname(filename))
-			file = open(filename, 'wb')
+        filename = config['database']['path']
+        try:
+            file = open(filename, 'wb')
+        except FileNotFoundError:
+            os.makedirs(os.path.dirname(filename))
+            file = open(filename, 'wb')
 
-		with file:
-			file.write(self._salt)
-			file.write(iv)
-			file.write(ciphertext)
+        with file:
+            file.write(self._salt)
+            file.write(iv)
+            file.write(ciphertext)
 
-	def get_credentials(self, domain):
-		try:
-			credentials = self._data[domain.lower()][1]
-		except KeyError:
-			raise CredentialsDoNotExist
+    def get_credentials(self, domain):
+        try:
+            credentials = self._data[domain.lower()][1]
+        except KeyError:
+            raise CredentialsDoNotExist
 
-		return sorted(credentials.items(), key=lambda token: token[0])
+        return sorted(credentials.items(), key=lambda token: token[0])
 
-	def get_domains(self):
-		return [domain for _, (domain, _) in sorted(self._data.items(), key=lambda pair: pair[0])]
+    def get_domains(self):
+        return [domain for _, (domain, _) in sorted(self._data.items(), key=lambda pair: pair[0])]
 
-	def store_credentials(self, domain, username, password, override=False):
-		domain_lower = domain.lower()
+    def store_credentials(self, domain, username, password, override=False):
+        domain_lower = domain.lower()
 
-		if domain_lower not in self._data:
-			credentials = {}
-		else:
-			credentials = self._data[domain_lower][1]
+        if domain_lower not in self._data:
+            credentials = {}
+        else:
+            credentials = self._data[domain_lower][1]
 
-			if not override and username in credentials:
-				raise CredentialsAlreadytExist
+            if not override and username in credentials:
+                raise CredentialsAlreadytExist
 
-			if SINGLE_PASSWORD in credentials:
-				if not override:
-					raise CredentialsAlreadytExist
+            if SINGLE_PASSWORD in credentials:
+                if not override:
+                    raise CredentialsAlreadytExist
 
-				credentials = {}
+                credentials = {}
 
-		credentials[username] = password
-		self._data[domain_lower] = (domain, credentials)
-		self._write()
+        credentials[username] = password
+        self._data[domain_lower] = (domain, credentials)
+        self._write()
 
-	def store_password(self, domain, password, override=False):
-		domain_lower = domain.lower()
+    def store_password(self, domain, password, override=False):
+        domain_lower = domain.lower()
 
-		if not override and domain_lower in self._data:
-			raise CredentialsAlreadytExist
+        if not override and domain_lower in self._data:
+            raise CredentialsAlreadytExist
 
-		self._data[domain_lower] = (domain, {SINGLE_PASSWORD: password})
-		self._write()
+        self._data[domain_lower] = (domain, {SINGLE_PASSWORD: password})
+        self._write()
 
-	def delete_credentials(self, domain, username):
-		domain_lower = domain.lower()
+    def delete_credentials(self, domain, username):
+        domain_lower = domain.lower()
 
-		try:
-			credentials = self._data[domain_lower][1]
-			del credentials[username]
-		except KeyError:
-			raise CredentialsDoNotExist
+        try:
+            credentials = self._data[domain_lower][1]
+            del credentials[username]
+        except KeyError:
+            raise CredentialsDoNotExist
 
-		if not credentials:
-			del self._data[domain_lower]
+        if not credentials:
+            del self._data[domain_lower]
 
-		self._write()
+        self._write()
 
-	def delete_domain(self, domain):
-		try:
-			del self._data[domain.lower()]
-		except KeyError:
-			raise CredentialsDoNotExist
+    def delete_domain(self, domain):
+        try:
+            del self._data[domain.lower()]
+        except KeyError:
+            raise CredentialsDoNotExist
 
-		self._write()
+        self._write()
 
-	def rename_credentials(self, old_domain, new_domain, old_username=None, new_username=None, override=False):
-		old_domain_lower = old_domain.lower()
+    def rename_credentials(self, old_domain, new_domain, old_username=None, new_username=None, override=False):
+        old_domain_lower = old_domain.lower()
 
-		try:
-			record = self._data[old_domain_lower]
-		except KeyError:
-			raise CredentialsDoNotExist
-		credentials = record[1]
+        try:
+            record = self._data[old_domain_lower]
+        except KeyError:
+            raise CredentialsDoNotExist
+        credentials = record[1]
 
-		try:
-			if old_username:
-				try:
-					password = credentials.pop(old_username)
-				except KeyError:
-					raise CredentialsDoNotExist
+        try:
+            if old_username:
+                try:
+                    password = credentials.pop(old_username)
+                except KeyError:
+                    raise CredentialsDoNotExist
 
-				try:
-					if not credentials:
-						del self._data[old_domain_lower]
+                try:
+                    if not credentials:
+                        del self._data[old_domain_lower]
 
-					if new_username:
-						self.store_credentials(new_domain, new_username, password, override)
-					else:
-						self.store_password(new_domain, password, override)
-				except:
-					credentials[old_username] = password
-					raise
-			else:
-				del self._data[old_domain_lower]
+                    if new_username:
+                        self.store_credentials(new_domain, new_username, password, override)
+                    else:
+                        self.store_password(new_domain, password, override)
+                except:
+                    credentials[old_username] = password
+                    raise
+            else:
+                del self._data[old_domain_lower]
 
-				if new_username:
-					try:
-						password = credentials[SINGLE_PASSWORD]
-					except KeyError:
-						raise CredentialsDoNotExist
+                if new_username:
+                    try:
+                        password = credentials[SINGLE_PASSWORD]
+                    except KeyError:
+                        raise CredentialsDoNotExist
 
-					self.store_credentials(new_domain, new_username, password, override)
-				else:
-					new_domain_lower = new_domain.lower()
+                    self.store_credentials(new_domain, new_username, password, override)
+                else:
+                    new_domain_lower = new_domain.lower()
 
-					if not override and new_domain_lower in self._data:
-						raise CredentialsAlreadytExist
+                    if not override and new_domain_lower in self._data:
+                        raise CredentialsAlreadytExist
 
-					self._data[new_domain_lower] = (new_domain, credentials)
-					self._write()
-		except:
-			self._data[old_domain_lower] = record
-			raise
+                    self._data[new_domain_lower] = (new_domain, credentials)
+                    self._write()
+        except:
+            self._data[old_domain_lower] = record
+            raise
 
-	def change_passphrase(self, passphrase):
-		self._init_key(passphrase, os.urandom(SALT_SIZE))
-		self._write()
+    def change_passphrase(self, passphrase):
+        self._init_key(passphrase, os.urandom(SALT_SIZE))
+        self._write()
 
-	@classmethod
-	def decrypt(cls, ciphertext, passphrase):
-		try:
-			salt, iv = cls._header_struct.unpack_from(ciphertext)
-		except struct.error:
-			raise WrongPassphraseOrBrokenDatabase
+    @classmethod
+    def decrypt(cls, ciphertext, passphrase):
+        try:
+            salt, iv = cls._header_struct.unpack_from(ciphertext)
+        except struct.error:
+            raise WrongPassphraseOrBrokenDatabase
 
-		db = cls()
-		db._init_key(passphrase, salt)
+        db = cls()
+        db._init_key(passphrase, salt)
 
-		cipher = db._get_cipher(iv)
-		ciphertext = ciphertext[cls._header_struct.size:]
+        cipher = db._get_cipher(iv)
+        ciphertext = ciphertext[cls._header_struct.size:]
 
-		try:
-			data = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
-		except ValueError:
-			raise WrongPassphraseOrBrokenDatabase
+        try:
+            data = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
+        except ValueError:
+            raise WrongPassphraseOrBrokenDatabase
 
-		if not isinstance(data, dict):
-			raise WrongPassphraseOrBrokenDatabase
+        if not isinstance(data, dict):
+            raise WrongPassphraseOrBrokenDatabase
 
-		for domain, credentials in data.items():
-			db._data[domain.lower()] = (domain, credentials)
+        for domain, credentials in data.items():
+            db._data[domain.lower()] = (domain, credentials)
 
-		return db
+        return db
 
-	@classmethod
-	def create(cls, passphrase):
-		db = cls()
-		db.change_passphrase(passphrase)
-		return db
+    @classmethod
+    def create(cls, passphrase):
+        db = cls()
+        db.change_passphrase(passphrase)
+        return db

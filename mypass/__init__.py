@@ -14,24 +14,34 @@ from getpass import getuser
 
 SOCKET = '/tmp/mypass-{}.sock'.format(getuser())
 
+
 class Error(Exception):
-	pass
+    pass
+
 
 class ConfigError(Error):
-	pass
+    pass
+
 
 class CredentialsDoNotExist(Error):
-	def __str__(self):
-		return 'Credentials do not exist'
+
+    def __str__(self):
+        return 'Credentials do not exist'
+
 
 class CredentialsAlreadytExist(Error):
-	def __str__(self):
-		return 'Credentials already exist'
+
+    def __str__(self):
+        return 'Credentials already exist'
+
 
 class WrongPassphraseOrBrokenDatabase(Error):
-	def __str__(self):
-		return 'Wrong passphrase or broken database'
+
+    def __str__(self):
+        return 'Wrong passphrase or broken database'
+
 
 class ConnectionLost(Error):
-	def __str__(self):
-		return 'Connection lost'
+
+    def __str__(self):
+        return 'Connection lost'

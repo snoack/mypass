@@ -16,167 +16,167 @@ var tabs = {__proto__: null};
 var lastError = null;
 
 function setDetails(tabId, url, revealed) {
-	var urls = tabs[tabId];
+  var urls = tabs[tabId];
 
-	if (!urls)
-		urls = tabs[tabId] = {__proto__: null};
+  if (!urls)
+    urls = tabs[tabId] = {__proto__: null};
 
-	urls[url] = revealed;
+  urls[url] = revealed;
 }
 
 function showPageActionLocked(tabId) {
-	chrome.pageAction.setIcon({
-		tabId: tabId,
-		path: {
-			"19": "icons/locked-19.png",
-			"38": "icons/locked-38.png"
-		}
-	});
-	chrome.pageAction.setPopup({
-		tabId: tabId,
-		popup: "popup.html"
-	});
-	chrome.pageAction.show(tabId);
+  chrome.pageAction.setIcon({
+    tabId: tabId,
+    path: {
+      "19": "icons/locked-19.png",
+      "38": "icons/locked-38.png"
+    }
+  });
+  chrome.pageAction.setPopup({
+    tabId: tabId,
+    popup: "popup.html"
+  });
+  chrome.pageAction.show(tabId);
 }
 
 function showPageActionUnlocked(tabId) {
-	chrome.pageAction.setIcon({
-		tabId: tabId,
-		path: {
-			"19": "icons/unlocked-19.png",
-			"38": "icons/unlocked-38.png"
-		}
-	});
-	chrome.pageAction.setPopup({
-		tabId: tabId,
-		popup: ""
-	});
-	chrome.pageAction.show(tabId);
+  chrome.pageAction.setIcon({
+    tabId: tabId,
+    path: {
+      "19": "icons/unlocked-19.png",
+      "38": "icons/unlocked-38.png"
+    }
+  });
+  chrome.pageAction.setPopup({
+    tabId: tabId,
+    popup: ""
+  });
+  chrome.pageAction.show(tabId);
 }
 
 function setLocked() {
-	for (var tabId in tabs) {
-		tabId = parseInt(tabId);
+  for (var tabId in tabs) {
+    tabId = parseInt(tabId);
 
-		showPageActionLocked(tabId);
-		chrome.tabs.sendMessage(tabId, {action: "conceal-credentials"});
+    showPageActionLocked(tabId);
+    chrome.tabs.sendMessage(tabId, {action: "conceal-credentials"});
 
-		for (var url in tabs[tabId])
-			tabs[tabId][url] = false;
-	}
+    for (var url in tabs[tabId])
+      tabs[tabId][url] = false;
+  }
 }
 
 function setUnlocked() {
-	for (var tabId in tabs) {
-		tabId = parseInt(tabId);
+  for (var tabId in tabs) {
+    tabId = parseInt(tabId);
 
-		for (var url in tabs[tabId]) {
-			if (!tabs[tabId][url]) {
-				revealCredentials(tabId, url);
-				break;
-			}
-		}
-	}
+    for (var url in tabs[tabId]) {
+      if (!tabs[tabId][url]) {
+        revealCredentials(tabId, url);
+        break;
+      }
+    }
+  }
 }
 
 function lock() {
-	chrome.runtime.sendNativeMessage(
-		"org.snoack.mypass",
-		{
-			action: "lock-database"
-		}
-	);
+  chrome.runtime.sendNativeMessage(
+    "org.snoack.mypass",
+    {
+      action: "lock-database"
+    }
+  );
 
-	setLocked();
+  setLocked();
 }
 
 function unlock(passphrase, callback) {
-	chrome.runtime.sendNativeMessage(
-		"org.snoack.mypass",
-		{
-			action: "unlock-database",
-			passphrase: passphrase
-		},
-		function(response) {
-			if (response.status == "ok") {
-				callback(true);
-				setUnlocked();
-				return;
-			}
+  chrome.runtime.sendNativeMessage(
+    "org.snoack.mypass",
+    {
+      action: "unlock-database",
+      passphrase: passphrase
+    },
+    function(response) {
+      if (response.status == "ok") {
+        callback(true);
+        setUnlocked();
+        return;
+      }
 
-			callback(false);
-		}
-	);
+      callback(false);
+    }
+  );
 }
 
 function errorFromResponse(response) {
-	if (response)
-		return response.status;
+  if (response)
+    return response.status;
 
-	if (/^(Linux\b|MacIntel$)/.test(navigator.platform) && !/\bCrOS\b/.test(navigator.userAgent))
-		return "not-installed";
+  if (/^(Linux\b|MacIntel$)/.test(navigator.platform) && !/\bCrOS\b/.test(navigator.userAgent))
+    return "not-installed";
 
-	return "os-not-supported";
+  return "os-not-supported";
 }
 
 function revealCredentials(tabId, url) {
-	chrome.runtime.sendNativeMessage(
-		"org.snoack.mypass",
-		{
-			action: "get-credentials",
-			url: url
-		},
-		function(response) {
-			switch (response && response.status) {
-				case "ok":
-					chrome.tabs.sendMessage(
-						tabId,
-						{
-							action: "reveal-credentials",
-							url: url,
-							credentials: response.credentials
-						}
-					);
+  chrome.runtime.sendNativeMessage(
+    "org.snoack.mypass",
+    {
+      action: "get-credentials",
+      url: url
+    },
+    function(response) {
+      switch (response && response.status) {
+        case "ok":
+          chrome.tabs.sendMessage(
+            tabId,
+            {
+              action: "reveal-credentials",
+              url: url,
+              credentials: response.credentials
+            }
+          );
 
-				case "no-credentials":
-					showPageActionUnlocked(tabId);
-					setDetails(tabId, url, true);
-					setUnlocked();
-					break;
+        case "no-credentials":
+          showPageActionUnlocked(tabId);
+          setDetails(tabId, url, true);
+          setUnlocked();
+          break;
 
-				default:
-					lastError = errorFromResponse(response);
-					setDetails(tabId, url, false);
-					setLocked();
-					break;
-			}
-		}
-	);
+        default:
+          lastError = errorFromResponse(response);
+          setDetails(tabId, url, false);
+          setLocked();
+          break;
+      }
+    }
+  );
 }
 
 chrome.tabs.onRemoved.addListener(function(tabId) {
-	delete tabs[tabId];
+  delete tabs[tabId];
 });
 
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
-	if (changeInfo.status == "loading")
-		delete tabs[tabId];
+  if (changeInfo.status == "loading")
+    delete tabs[tabId];
 });
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
-	switch (message.action) {
-		case "unlock-database":
-			unlock(message.passphrase, sendResponse);
-			return true;
+  switch (message.action) {
+    case "unlock-database":
+      unlock(message.passphrase, sendResponse);
+      return true;
 
-		case "request-credentials":
-			revealCredentials(sender.tab.id, sender.url);
-			return false;
+    case "request-credentials":
+      revealCredentials(sender.tab.id, sender.url);
+      return false;
 
-		case "get-last-error":
-			sendResponse(lastError);
-			return false;
-	}
+    case "get-last-error":
+      sendResponse(lastError);
+      return false;
+  }
 });
 
 chrome.pageAction.onClicked.addListener(lock);

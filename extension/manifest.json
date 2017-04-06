@@ -1,28 +1,28 @@
 {
-	"name": "mypass",
-	"description": "Chrome integration for \"mypass\" password manager",
-	"version": "1.7",
-	"manifest_version": 2,
-	"minimum_chrome_version": "33",
-	"permissions": [
-		"http://*/*",
-		"https://*/*",
-		"nativeMessaging",
-		"tabs"
-	],
-	"background": {
-		"scripts": ["background.js"]
-	},
-	"content_scripts": [
-		{
-			"js": ["content.js"],
-			"all_frames": true,
-			"matches": ["http://*/*", "https://*/*"]
-		}
-	],
-	"icons": {
-		"19": "icons/locked-19.png",
-		"38": "icons/locked-38.png"
-	},
-	"page_action": {}
+  "name": "mypass",
+  "description": "Chrome integration for \"mypass\" password manager",
+  "version": "1.7",
+  "manifest_version": 2,
+  "minimum_chrome_version": "33",
+  "permissions": [
+    "http://*/*",
+    "https://*/*",
+    "nativeMessaging",
+    "tabs"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "js": ["content.js"],
+      "all_frames": true,
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
+  "icons": {
+    "19": "icons/locked-19.png",
+    "38": "icons/locked-38.png"
+  },
+  "page_action": {}
 }

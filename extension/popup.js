@@ -13,50 +13,50 @@
  */
 
 function showRelevantContent() {
-	chrome.runtime.sendMessage(
-		{
-			action: "get-last-error"
-		},
-		function(id) {
-			document.getElementById(id).classList.add("active");
-		}
-	);
+  chrome.runtime.sendMessage(
+    {
+      action: "get-last-error"
+    },
+    function(id) {
+      document.getElementById(id).classList.add("active");
+    }
+  );
 }
 
 function setupPassphraseInput() {
-	var input = document.getElementById("passphrase");
+  var input = document.getElementById("passphrase");
 
-	input.addEventListener("keyup", function(event) {
-		if (event.keyCode != 13)
-			return;
+  input.addEventListener("keyup", function(event) {
+    if (event.keyCode != 13)
+      return;
 
-		chrome.runtime.sendMessage(
-			{
-				action: "unlock-database",
-				passphrase: input.value
-			},
-			function(success) {
-				if (success) {
-					window.close();
-				} else {
-					input.classList.add("error");
-					input.value = "";
-				}
-			}
-		);
-	});
+    chrome.runtime.sendMessage(
+      {
+        action: "unlock-database",
+        passphrase: input.value
+      },
+      function(success) {
+        if (success) {
+          window.close();
+        } else {
+          input.classList.add("error");
+          input.value = "";
+        }
+      }
+    );
+  });
 
-	input.addEventListener("input", function(event) {
-		input.classList.remove("error");
-	});
+  input.addEventListener("input", function(event) {
+    input.classList.remove("error");
+  });
 }
 
 function setupLinks() {
-	[].forEach.call(document.querySelectorAll("a[href]"), function(link) {
-		link.addEventListener("click", function(event) {
-			chrome.tabs.create({url: link.href});
-		});
-	});
+  [].forEach.call(document.querySelectorAll("a[href]"), function(link) {
+    link.addEventListener("click", function(event) {
+      chrome.tabs.create({url: link.href});
+    });
+  });
 }
 
 showRelevantContent();
