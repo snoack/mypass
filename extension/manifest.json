@@ -24,5 +24,6 @@
     "19": "icons/locked-19.png",
     "38": "icons/locked-38.png"
   },
-  "page_action": {}
+  "page_action": {},
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiGkb1NjNUU9spNBHVuZ3oEpd4fpqdg2upLQpi2F6cvPE6Fp/EOTOGek9UZlbVMFGShti3xO0hTtUhJBiEpHIkUypz59tLu0ELypmpurDuPDNDPbTAAlIFqnvpW4YARMI3P9V08L9NofF8yxiATGraAMuq4Z6a4wzHnLbwPKEDE7bXVyLJpbHsdgV5oEOygaBJkXQHXSjPR2I4FLB5/wCMwFzT/kPMTuOVz4NMRFYhNJhIz05S+UiEyAEbK6byPhJx+oyKw/FQK8YpqPyuNhX4r6MdozolKd3Ky7FkWJn97W27pPSnOfyTQ+2dq5IVaA1q4pGsRKiQlqNFpMAGSjfHQIDAQAB"
 }

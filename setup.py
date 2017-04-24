@@ -49,9 +49,10 @@ class install_with_chrome(install):
             manifest = self._create_manifest()
 
             for dir in CHROME_NATIVE_MESSAGING_MANIFEST_DIRS[sys.platform]:
-                self.mkpath(dir)
+                dirname = (self.root or '') + dir
+                self.mkpath(dirname)
 
-                outfile = os.path.join(dir, manifest['name'] + '.json')
+                outfile = os.path.join(dirname, manifest['name'] + '.json')
                 log.info("Writing %s", outfile)
 
                 if not self.dry_run:

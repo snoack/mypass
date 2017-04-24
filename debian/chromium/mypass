@@ -1,0 +1,2 @@
+#!/bin/sh
+export CHROMIUM_FLAGS="${CHROMIUM_FLAGS} --load-extension=/usr/share/chromium/extensions/mypass"

@@ -1,0 +1,13 @@
+Source: mypass
+Maintainer: Sebastian Noack <sebastian.noack@gmail.com>
+Section: utils
+Priority: optional
+Build-Depends: dh-python, python3, debhelper (>= 9)
+Standards-Version: 3.9.6
+Homepage: https://github.com/snoack/mypass
+
+Package: mypass
+Architecture: all
+Depends: ${misc:Depends}, ${python3:Depends}, python3-crypto
+Description: Command line password manager and Chrome extension
+
