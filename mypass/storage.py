@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Sebastian Noack
+# Copyright (c) 2014-2017 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -17,14 +17,14 @@ import struct
 import Crypto.Cipher.AES
 import Crypto.Hash.HMAC
 import Crypto.Hash.SHA256
-import Crypto.Protocol.KDF
 
 from mypass import CredentialsDoNotExist, CredentialsAlreadytExist, WrongPassphraseOrBrokenDatabase
 from mypass.config import config
+from mypass.pbkdf2 import pbkdf2
 
 KEY_SIZE = 32
 SALT_SIZE = 48
-ITERATIONS = 10000
+ITERATIONS = 200000
 
 SINGLE_PASSWORD = ''
 
@@ -35,15 +35,27 @@ class Database:
     def __init__(self):
         self._data = {}
 
-    def _init_key(self, passphrase, salt):
-        self._key = Crypto.Protocol.KDF.PBKDF2(
-            passphrase.encode('utf-8'), salt, KEY_SIZE, ITERATIONS,
-                lambda p, s: Crypto.Hash.HMAC.new(p, s, Crypto.Hash.SHA256).digest()
-        )
+    def _init_key(self, passphrase, salt, iterations=ITERATIONS):
+        self._key = pbkdf2(passphrase.encode('utf-8'), salt, iterations, KEY_SIZE)
         self._salt = salt
 
     def _get_cipher(self, iv):
         return Crypto.Cipher.AES.new(self._key, Crypto.Cipher.AES.MODE_CBC, iv)
+
+    def _decrypt(self, ciphertext, iv, passphrase, salt, iterations=ITERATIONS):
+        self._init_key(passphrase, salt, iterations)
+        cipher = self._get_cipher(iv)
+
+        try:
+            data = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
+        except ValueError:
+            raise WrongPassphraseOrBrokenDatabase
+
+        if not isinstance(data, dict):
+            raise WrongPassphraseOrBrokenDatabase
+
+        for domain, credentials in data.items():
+            self._data[domain.lower()] = (domain, credentials)
 
     def _write(self):
         block_size = Crypto.Cipher.AES.block_size
@@ -190,21 +202,18 @@ class Database:
             raise WrongPassphraseOrBrokenDatabase
 
         db = cls()
-        db._init_key(passphrase, salt)
-
-        cipher = db._get_cipher(iv)
         ciphertext = ciphertext[cls._header_struct.size:]
 
         try:
-            data = json.loads(cipher.decrypt(ciphertext).decode('utf-8'))
-        except ValueError:
-            raise WrongPassphraseOrBrokenDatabase
+            db._decrypt(ciphertext, iv, passphrase, salt)
+        except WrongPassphraseOrBrokenDatabase:
+            # Version 1.0 used mere 10k iterations
+            # due to a slow PBKDF2 implementation.
+            db._decrypt(ciphertext, iv, passphrase, salt, 10000)
 
-        if not isinstance(data, dict):
-            raise WrongPassphraseOrBrokenDatabase
-
-        for domain, credentials in data.items():
-            db._data[domain.lower()] = (domain, credentials)
+            # Re-init the key, so that we use a decent number
+            # of iterations if/when changes are written.
+            db._init_key(passphrase, salt)
 
         return db
 
