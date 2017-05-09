@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Sebastian Noack
+ * Copyright (c) 2014-2017 Sebastian Noack
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -12,18 +12,19 @@
  * for more details.
  */
 
-function showRelevantContent() {
+function revealCredentials(tabId) {
   chrome.runtime.sendMessage(
-    {
-      action: "get-last-error"
-    },
-    function(id) {
-      document.getElementById(id).classList.add("active");
+    {action: "reveal-credentials", tabId},
+    function(status) {
+      document.documentElement.dataset.status = status;
+
+      if (status == "ok")
+        setTimeout(function() { window.close(); }, 1000);
     }
   );
 }
 
-function setupPassphraseInput() {
+function setupPassphraseInput(tabId) {
   var input = document.getElementById("passphrase");
 
   input.addEventListener("keyup", function(event) {
@@ -31,16 +32,14 @@ function setupPassphraseInput() {
       return;
 
     chrome.runtime.sendMessage(
-      {
-        action: "unlock-database",
-        passphrase: input.value
-      },
-      function(success) {
-        if (success) {
-          window.close();
-        } else {
-          input.classList.add("error");
-          input.value = "";
+      {action: "unlock-database", passphrase: input.value},
+      function(response) {
+        input.value = ""
+        if (response && response.status == "failure")
+          document.documentElement.dataset.wrongPassphrase = "";
+        else {
+          revealCredentials(tabId);
+          delete document.documentElement.dataset.wrongPassphrase;
         }
       }
     );
@@ -51,14 +50,15 @@ function setupPassphraseInput() {
   });
 }
 
-function setupLinks() {
-  [].forEach.call(document.querySelectorAll("a[href]"), function(link) {
-    link.addEventListener("click", function(event) {
-      chrome.tabs.create({url: link.href});
-    });
-  });
-}
+chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  var tabId = tabs[0].id;
+  revealCredentials(tabId);
+  setupPassphraseInput(tabId);
+});
 
-showRelevantContent();
-setupPassphraseInput();
-setupLinks();
+document.addEventListener("click", function(event) {
+  if (event.target.localName == 'a' && event.target.href) {
+    chrome.tabs.create({url: event.target.href});
+    event.preventDefault();
+  }
+});

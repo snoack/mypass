@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Sebastian Noack
+ * Copyright (c) 2014-2017 Sebastian Noack
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -12,156 +12,69 @@
  * for more details.
  */
 
-var tabs = {__proto__: null};
-var lastError = null;
+function revealCredentials(tabId, callback) {
+  var pendingFrames = 0;
+  var status = "no-login-form";
 
-function setDetails(tabId, url, revealed) {
-  var urls = tabs[tabId];
-
-  if (!urls)
-    urls = tabs[tabId] = {__proto__: null};
-
-  urls[url] = revealed;
-}
-
-function showPageAction(tabId, state) {
-  chrome.pageAction.setIcon({
-    tabId: tabId,
-    path: {
-      "19": "icons/" + state + "-19.png",
-      "38": "icons/" + state + "-38.png"
+  var checkDone = function() {
+    if (pendingFrames == 0) {
+      chrome.runtime.onMessage.removeListener(onMessage);
+      callback(status);
     }
-  });
-  chrome.pageAction.setPopup({
-    tabId: tabId,
-    popup: state == "locked" ? "popup.html" : ""
-  });
-  chrome.pageAction.show(tabId);
-}
+  };
 
-function setLocked() {
-  for (var tabId in tabs) {
-    tabId = parseInt(tabId);
+  var onMessage = function(message, sender, sendResponse) {
+    if (message.action != "report-document" || sender.tab.id != tabId)
+      return;
 
-    showPageAction(tabId, "locked");
-    chrome.tabs.sendMessage(tabId, {action: "conceal-credentials"});
+    if (message.hasLogin) {
+      chrome.runtime.sendNativeMessage(
+        "org.snoack.mypass",
+        {action: "get-credentials", url: sender.url},
+        function (response) {
+          status = response ? response.status : "not-installed";
+          sendResponse(response && response.credentials);
 
-    for (var url in tabs[tabId])
-      tabs[tabId][url] = false;
-  }
-}
-
-function setUnlocked() {
-  for (var tabId in tabs) {
-    tabId = parseInt(tabId);
-
-    for (var url in tabs[tabId]) {
-      if (!tabs[tabId][url]) {
-        revealCredentials(tabId, url);
-        break;
-      }
+          pendingFrames--;
+          checkDone();
+        }
+      );
+      return true;
     }
-  }
-}
 
-function lock() {
-  chrome.runtime.sendNativeMessage(
-    "org.snoack.mypass",
-    {
-      action: "lock-database"
+    pendingFrames--;
+    checkDone();
+  };
+
+  chrome.tabs.executeScript(
+    tabId, {file: "content.js", allFrames: true, matchAboutBlank: true},
+    function(results) {
+      if (!chrome.runtime.lastError)
+        pendingFrames += results.length;
+      checkDone();
     }
   );
 
-  setLocked();
+  chrome.runtime.onMessage.addListener(onMessage);
 }
-
-function unlock(passphrase, callback) {
-  chrome.runtime.sendNativeMessage(
-    "org.snoack.mypass",
-    {
-      action: "unlock-database",
-      passphrase: passphrase
-    },
-    function(response) {
-      if (response.status == "ok") {
-        callback(true);
-        setUnlocked();
-        return;
-      }
-
-      callback(false);
-    }
-  );
-}
-
-function errorFromResponse(response) {
-  if (response)
-    return response.status;
-
-  if (/^(Linux\b|MacIntel$)/.test(navigator.platform) && !/\bCrOS\b/.test(navigator.userAgent))
-    return "not-installed";
-
-  return "os-not-supported";
-}
-
-function revealCredentials(tabId, url) {
-  chrome.runtime.sendNativeMessage(
-    "org.snoack.mypass",
-    {
-      action: "get-credentials",
-      url: url
-    },
-    function(response) {
-      switch (response && response.status) {
-        case "ok":
-          chrome.tabs.sendMessage(
-            tabId,
-            {
-              action: "reveal-credentials",
-              url: url,
-              credentials: response.credentials
-            }
-          );
-
-        case "no-credentials":
-          showPageAction(tabId, "unlocked");
-          setDetails(tabId, url, true);
-          setUnlocked();
-          break;
-
-        default:
-          lastError = errorFromResponse(response);
-          setDetails(tabId, url, false);
-          setLocked();
-          break;
-      }
-    }
-  );
-}
-
-chrome.tabs.onRemoved.addListener(function(tabId) {
-  delete tabs[tabId];
-});
-
-chrome.tabs.onUpdated.addListener(function(tabId, changeInfo) {
-  if (changeInfo.status == "loading")
-    delete tabs[tabId];
-});
 
 chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
   switch (message.action) {
-    case "unlock-database":
-      unlock(message.passphrase, sendResponse);
+    case "reveal-credentials":
+      revealCredentials(message.tabId, sendResponse);
       return true;
 
-    case "request-credentials":
-      revealCredentials(sender.tab.id, sender.url);
-      return false;
-
-    case "get-last-error":
-      sendResponse(lastError);
-      return false;
+    case "unlock-database":
+      chrome.runtime.sendNativeMessage("org.snoack.mypass", message, sendResponse);
+      return true;
   }
 });
 
-chrome.pageAction.onClicked.addListener(lock);
+chrome.runtime.onInstalled.addListener(function() {
+  chrome.contextMenus.create({id: "lock", title: "Lock database", contexts: ["browser_action"]});
+});
+
+chrome.contextMenus.onClicked.addListener(function(info) {
+	if (info.menuItemId == "lock")
+		chrome.runtime.sendNativeMessage("org.snoack.mypass", {action: "lock-database"});
+});

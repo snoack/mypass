@@ -1,27 +1,40 @@
 <style>
-body {
-  font-family: sans-serif;
-  font-size: 14px;
-  min-width: 200px;
-}
-
-body > div:not(.active) {
+html:not([data-status=ok]) #ok,
+html:not([data-status=no-login-form]) #no-login-form,
+html:not([data-status=no-credentials]) #no-credentials,
+html:not([data-status=database-locked]) #database-locked,
+html:not([data-status=database-does-not-exist]) #database-does-not-exist,
+html:not([data-status=not-installed]) #not-installed,
+html:not([data-wrong-passphrase]) #retry-label,
+html[data-wrong-passphrase] #unlock-label {
   display: none;
 }
 
-#database-locked {
+.oneline {
   white-space: nowrap;
 }
 
-.error {
-  border-color: red;
+.multiline {
+  min-width: 200px;
+}
+
+#passphrase {
+  margin: -1000px 0;
+  border: none;
   outline: none;
 }
+
 </style>
 
-<div id="database-locked">Unlock database: <input type="password" id="passphrase" autofocus></div>
-<div id="database-does-not-exist">It seems this is the first time you use mypass. You have to add some passwords and create the database, before you can use the Chrome extension.</div>
-<div id="not-installed">Failed to connect native application. In order to use this Chrome extension you have to <a href="https://github.com/snoack/mypass">install mypass</a>.</div>
-<div id="os-not-supported">This extension is only supported on <strong>Linux</strong> and <strong>OS X</strong>.</div>
+<div id="ok" class="oneline">The login form has been filled out.</div>
+<div id="no-login-form" class="oneline">No login form found on this page.</div>
+<div id="no-credentials" class="oneline">No credentials found for this page.</div>
+<div id="database-locked" class="oneline">
+  <span id="unlock-label">Unlock database:</span>
+  <span id="retry-label">Wrong passphrase, try again:</span>
+  <input type="password" id="passphrase" autofocus>
+</div>
+<div id="database-does-not-exist" class="multiline">It seems this is the first time you use mypass. You have to add some passwords and create the database, before you can use the Chrome extension.</div>
+<div id="not-installed" class="multiline">Failed to connect to host application. In order to use this extension you have to <a href="https://github.com/snoack/mypass">install mypass</a>.</div>
 
 <script src="popup.js"></script>

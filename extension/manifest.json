@@ -3,27 +3,24 @@
   "description": "Chrome integration for \"mypass\" password manager",
   "version": "1.8",
   "manifest_version": 2,
-  "minimum_chrome_version": "33",
+  "minimum_chrome_version": "39",
   "permissions": [
-    "http://*/*",
-    "https://*/*",
+    "activeTab",
     "nativeMessaging",
-    "tabs"
+    "contextMenus"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["background.js"],
+    "persistent": false
   },
-  "content_scripts": [
-    {
-      "js": ["content.js"],
-      "all_frames": true,
-      "matches": ["http://*/*", "https://*/*"]
-    }
-  ],
-  "icons": {
-    "19": "icons/locked-19.png",
-    "38": "icons/locked-38.png"
+  "browser_action": {
+    "default_icon": {
+      "16": "icon-16.png",
+      "19": "icon-19.png",
+      "32": "icon-32.png",
+      "38": "icon-38.png"
+    },
+    "default_popup": "popup.html"
   },
-  "page_action": {},
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiGkb1NjNUU9spNBHVuZ3oEpd4fpqdg2upLQpi2F6cvPE6Fp/EOTOGek9UZlbVMFGShti3xO0hTtUhJBiEpHIkUypz59tLu0ELypmpurDuPDNDPbTAAlIFqnvpW4YARMI3P9V08L9NofF8yxiATGraAMuq4Z6a4wzHnLbwPKEDE7bXVyLJpbHsdgV5oEOygaBJkXQHXSjPR2I4FLB5/wCMwFzT/kPMTuOVz4NMRFYhNJhIz05S+UiEyAEbK6byPhJx+oyKw/FQK8YpqPyuNhX4r6MdozolKd3Ky7FkWJn97W27pPSnOfyTQ+2dq5IVaA1q4pGsRKiQlqNFpMAGSjfHQIDAQAB"
 }

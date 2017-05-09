@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Sebastian Noack
+ * Copyright (c) 2014-2017 Sebastian Noack
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -12,170 +12,38 @@
  * for more details.
  */
 
-function Form(usernameInput, passwordInputs) {
-  this._usernameInput  = usernameInput;
-  this._passwordInputs = passwordInputs;
+(function() {
+  var passwordFields = document.querySelectorAll("input[type=password]");
 
-  this._changedValues  = [];
-  this._usernameSelect = null;
-}
-Form.prototype = {
-  _set: function(element, value) {
-    var onInput = function() {
-      var idx = this._changedValues.indexOf(changeInfo);
-      if (idx != -1)
-        this._changedValues.splice(idx, 1);
+  chrome.runtime.sendMessage(
+    {action: "report-document", hasLogin: passwordFields.length > 0},
+    function(credentials) {
+      if (!credentials)
+        return;
 
-      element.removeEventListener("input", onInput);
-    }.bind(this);
+      fields: for (var i = 0; i < passwordFields.length; i++) {
+        var passwordField = passwordFields[i];
 
-    var changeInfo = {
-      element:  element,
-      oldValue: element.value,
-      onInput:  onInput
-    };
-    this._changedValues.push(changeInfo);
+        if (passwordField.form && credentials[0].username)
+          for (var j = 0; j < passwordField.form.elements.length; j++) {
+            var element = passwordField.form.elements[j];
 
-    element.value = value;
-    element.addEventListener("input", onInput);
-  },
-  _replace: function(newElement, oldElement) {
-    this._replacedElements.push({
-      oldElement: oldElement,
-      newElement: newElement
-    });
+            if (element.localName == "input" && (element.type == "text" ||
+                                                 element.type == "email")) {
+              for (var k = 0; k < credentials.length; k++) {
+                if (credentials[k].username == element.value) {
+                  passwordField.value = credentials[k].password;
+                  continue fields;
+                }
+              }
 
-    oldElement.parentNode.replaceChild(newElement, oldElement);
-  },
-  _createUsernameSelect: function(credentials, selected) {
-    this._usernameSelect = document.createElement("select");
+              element.value = credentials[0].username;
+              break;
+            }
+          }
 
-    this._usernameSelect.style.height  = this._usernameInput.offsetHeight + 'px';
-    this._usernameSelect.style.width   = this._usernameInput.offsetWidth  + 'px';
-    this._usernameSelect.style.display = getComputedStyle(this._usernameInput).display;
-
-    for (var i = 0; i < credentials.length; i++) {
-      var username = credentials[i].username;
-      var option = document.createElement("option");
-
-      if (username == selected)
-        option.setAttribute("selected", "selected");
-
-      option.value = option.textContent = username;
-      this._usernameSelect.appendChild(option);
-    }
-
-    this._usernameSelect.addEventListener("change", function() {
-      var username = this._usernameSelect.value;
-      this._set(this._usernameInput, username);
-
-      var password = getPassword(credentials, username);
-      for (var i = 0; i < this._passwordInputs.length; i++)
-        this._set(this._passwordInputs[i], password);
-    }.bind(this));
-
-    this._usernameInputDisplayValue    = this._usernameInput.style.getPropertyValue("display");
-    this._usernameInputDisplayPriority = this._usernameInput.style.getPropertyPriority("display");
-
-    this._usernameInput.style.setProperty("display", "none", "important");
-    this._usernameInput.parentNode.insertBefore(this._usernameSelect, this._usernameInput);
-  },
-  fill: function(credentials) {
-    var username = credentials[0].username;
-    var password = credentials[0].password;
-
-    if (this._usernameInput) {
-      if (credentials.length > 1) {
-        var username_ = this._usernameInput.value;
-        var password_ = getPassword(credentials, username_);
-
-        if (password_ != null) {
-          username = username_;
-          password = password_;
-        }
-
-        this._createUsernameSelect(credentials, username);
+        passwordField.value = credentials[0].password;
       }
-
-      if (username)
-        this._set(this._usernameInput, username);
     }
-
-    for (var i = 0; i < this._passwordInputs.length; i++)
-      this._set(this._passwordInputs[i], password);
-  },
-  restore: function() {
-    while (this._changedValues.length > 0) {
-      var changeInfo = this._changedValues.shift();
-      var element = changeInfo.element;
-
-      element.removeEventListener("input", changeInfo.onInput);
-      element.value = changeInfo.oldValue;
-    }
-
-    if (this._usernameSelect) {
-      this._usernameSelect.parentNode.removeChild(this._usernameSelect);
-      this._usernameSelect = null;
-
-      this._usernameInput.style.setProperty(
-        "display", this._usernameInputDisplayValue,
-                   this._usernameInputDisplayPriority
-      );
-    }
-  }
-};
-
-function findForms() {
-  var forms = [];
-
-  var passwordInputs = document.querySelectorAll("input[type=password]");
-  var seenFormElements = [];
-
-  for (var i = 0; i < passwordInputs.length; i++)
-  {
-    var passwordInput = passwordInputs[i];
-    var formElement = passwordInput.form;
-
-    if (!formElement)
-      forms.push(new Form(null, [passwordInput]));
-    else if (seenFormElements.indexOf(formElement) == -1) {
-      forms.push(new Form(
-        formElement.querySelector("input[type=text],input[type=email],input:not([type])"),
-        formElement.querySelectorAll("input[type=password]")
-      ));
-
-      seenFormElements.push(formElement);
-    }
-  }
-
-  return forms;
-}
-
-function getPassword(credentials, username) {
-  for (var i = 0; i < credentials.length; i++) {
-    var token = credentials[i];
-
-    if (token.username == username)
-      return token.password;
-  }
-}
-
-var forms = findForms();
-if (forms.length > 0) {
-  chrome.runtime.onMessage.addListener(function(message) {
-    switch (message.action) {
-      case "reveal-credentials":
-        if (message.url == location.href)
-          for (var i = 0; i < forms.length; i++)
-            forms[i].fill(message.credentials);
-        break;
-
-      case "conceal-credentials":
-        for (var i = 0; i < forms.length; i++)
-          forms[i].restore();
-        break;
-    }
-  });
-
-  chrome.runtime.sendMessage({action: "request-credentials"});
-}
+  );
+})();
