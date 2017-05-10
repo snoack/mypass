@@ -1,7 +1,7 @@
 {
   "name": "mypass",
   "description": "Chrome integration for \"mypass\" password manager",
-  "version": "1.8",
+  "version": "1.9",
   "manifest_version": 2,
   "minimum_chrome_version": "39",
   "permissions": [
