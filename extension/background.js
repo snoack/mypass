@@ -47,7 +47,7 @@ function revealCredentials(tabId, callback) {
   };
 
   chrome.tabs.executeScript(
-    tabId, {file: "content.js", allFrames: true, matchAboutBlank: true},
+    tabId, {file: "content.js", allFrames: true},
     function(results) {
       if (!chrome.runtime.lastError)
         pendingFrames += results.length;
