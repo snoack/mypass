@@ -2,7 +2,7 @@ Source: mypass
 Maintainer: Sebastian Noack <sebastian.noack@gmail.com>
 Section: utils
 Priority: optional
-Build-Depends: dh-python, python3, debhelper (>= 9)
+Build-Depends: dh-python, python3, python3-setuptools, debhelper (>= 9)
 Standards-Version: 3.9.6
 Homepage: https://github.com/snoack/mypass
 

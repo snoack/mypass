@@ -7,10 +7,10 @@ if sys.version_info[0] < 3:
 import os
 import json
 from collections import OrderedDict
-
 from distutils import log
-from distutils.core import setup
-from distutils.command.install import install
+
+from setuptools import setup
+from setuptools.command.install import install
 
 CHROME_NATIVE_MESSAGING_MANIFEST_DIRS = {
     'linux': (
@@ -66,8 +66,10 @@ if sys.platform in CHROME_NATIVE_MESSAGING_MANIFEST_DIRS:
 setup(name='mypass',
       description='A password manager',
       author='Sebastian Noack',
+      author_email='sebstian.noack@gmail.com',
       url='https://github.com/snoack/mypass',
       version='1.9',
       packages=['mypass'],
       scripts=['bin/mypass'],
+      install_requires=['pycrypto'],
       cmdclass=cmdclass)
