@@ -54,8 +54,8 @@ class Database:
         if not isinstance(data, dict):
             raise WrongPassphraseOrBrokenDatabase
 
-        for domain, credentials in data.items():
-            self._data[domain.lower()] = (domain, credentials)
+        for context, credentials in data.items():
+            self._data[context.lower()] = (context, credentials)
 
     def _write(self):
         block_size = Crypto.Cipher.AES.block_size
@@ -78,24 +78,24 @@ class Database:
             file.write(iv)
             file.write(ciphertext)
 
-    def get_credentials(self, domain):
+    def get_credentials(self, context):
         try:
-            credentials = self._data[domain.lower()][1]
+            credentials = self._data[context.lower()][1]
         except KeyError:
             raise CredentialsDoNotExist
 
         return sorted(credentials.items(), key=lambda token: token[0])
 
-    def get_domains(self):
-        return [domain for _, (domain, _) in sorted(self._data.items(), key=lambda pair: pair[0])]
+    def get_contexts(self):
+        return [context for _, (context, _) in sorted(self._data.items(), key=lambda pair: pair[0])]
 
-    def store_credentials(self, domain, username, password, override=False):
-        domain_lower = domain.lower()
+    def store_credentials(self, context, username, password, override=False):
+        context_lower = context.lower()
 
-        if domain_lower not in self._data:
+        if context_lower not in self._data:
             credentials = {}
         else:
-            credentials = self._data[domain_lower][1]
+            credentials = self._data[context_lower][1]
 
             if not override and username in credentials:
                 raise CredentialsAlreadytExist
@@ -107,45 +107,45 @@ class Database:
                 credentials = {}
 
         credentials[username] = password
-        self._data[domain_lower] = (domain, credentials)
+        self._data[context_lower] = (context, credentials)
         self._write()
 
-    def store_password(self, domain, password, override=False):
-        domain_lower = domain.lower()
+    def store_password(self, context, password, override=False):
+        context_lower = context.lower()
 
-        if not override and domain_lower in self._data:
+        if not override and context_lower in self._data:
             raise CredentialsAlreadytExist
 
-        self._data[domain_lower] = (domain, {SINGLE_PASSWORD: password})
+        self._data[context_lower] = (context, {SINGLE_PASSWORD: password})
         self._write()
 
-    def delete_credentials(self, domain, username):
-        domain_lower = domain.lower()
+    def delete_credentials(self, context, username):
+        context_lower = context.lower()
 
         try:
-            credentials = self._data[domain_lower][1]
+            credentials = self._data[context_lower][1]
             del credentials[username]
         except KeyError:
             raise CredentialsDoNotExist
 
         if not credentials:
-            del self._data[domain_lower]
+            del self._data[context_lower]
 
         self._write()
 
-    def delete_domain(self, domain):
+    def delete_context(self, context):
         try:
-            del self._data[domain.lower()]
+            del self._data[context.lower()]
         except KeyError:
             raise CredentialsDoNotExist
 
         self._write()
 
-    def rename_credentials(self, old_domain, new_domain, old_username=None, new_username=None, override=False):
-        old_domain_lower = old_domain.lower()
+    def rename_credentials(self, old_context, new_context, old_username=None, new_username=None, override=False):
+        old_context_lower = old_context.lower()
 
         try:
-            record = self._data[old_domain_lower]
+            record = self._data[old_context_lower]
         except KeyError:
             raise CredentialsDoNotExist
         credentials = record[1]
@@ -159,17 +159,17 @@ class Database:
 
                 try:
                     if not credentials:
-                        del self._data[old_domain_lower]
+                        del self._data[old_context_lower]
 
                     if new_username:
-                        self.store_credentials(new_domain, new_username, password, override)
+                        self.store_credentials(new_context, new_username, password, override)
                     else:
-                        self.store_password(new_domain, password, override)
+                        self.store_password(new_context, password, override)
                 except:
                     credentials[old_username] = password
                     raise
             else:
-                del self._data[old_domain_lower]
+                del self._data[old_context_lower]
 
                 if new_username:
                     try:
@@ -177,17 +177,17 @@ class Database:
                     except KeyError:
                         raise CredentialsDoNotExist
 
-                    self.store_credentials(new_domain, new_username, password, override)
+                    self.store_credentials(new_context, new_username, password, override)
                 else:
-                    new_domain_lower = new_domain.lower()
+                    new_context_lower = new_context.lower()
 
-                    if not override and new_domain_lower in self._data:
+                    if not override and new_context_lower in self._data:
                         raise CredentialsAlreadytExist
 
-                    self._data[new_domain_lower] = (new_domain, credentials)
+                    self._data[new_context_lower] = (new_context, credentials)
                     self._write()
         except:
-            self._data[old_domain_lower] = record
+            self._data[old_context_lower] = record
             raise
 
     def change_passphrase(self, passphrase):

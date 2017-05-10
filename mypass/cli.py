@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Sebastian Noack
+# Copyright (c) 2014-2017 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -70,30 +70,30 @@ class CLI:
         subparsers.required = True
 
         subparser_get = subparsers.add_parser('get', help='Writes the requested password to stdout')
-        subparser_get.add_argument('domain')
+        subparser_get.add_argument('context')
         subparser_get.set_defaults(exit_if_db_does_not_exist=True)
 
         subparser_add = subparsers.add_parser('add', help='Adds the given password to the database')
-        subparser_add.add_argument('domain')
+        subparser_add.add_argument('context')
         subparser_add.add_argument('username', nargs='?')
         subparser_add.add_argument('password', nargs='?')
 
         subparser_new = subparsers.add_parser('new', help='Generates a new password and adds it to the database')
-        subparser_new.add_argument('domain')
+        subparser_new.add_argument('context')
         subparser_new.add_argument('username', nargs='?')
 
         subparser_remove = subparsers.add_parser('remove', help='Removes a password from the database')
-        subparser_remove.add_argument('domain')
+        subparser_remove.add_argument('context')
         subparser_remove.add_argument('username', nargs='?')
         subparser_remove.set_defaults(fail_if_db_does_not_exist=True)
 
-        subparser_rename = subparsers.add_parser('rename', help='Changes the domain and/or username of saved passwords')
-        subparser_rename.add_argument('old_domain')
+        subparser_rename = subparsers.add_parser('rename', help='Changes the context and/or username of saved passwords')
+        subparser_rename.add_argument('old_context')
         subparser_rename.add_argument('old_username', nargs='?')
-        subparser_rename.add_argument('--new-domain')
+        subparser_rename.add_argument('--new-context')
         subparser_rename.add_argument('--new-username')
 
-        subparser_list = subparsers.add_parser('list', help='Writes the domains of all passwords to stdout')
+        subparser_list = subparsers.add_parser('list', help='Writes the contexts of all passwords to stdout')
         subparser_list.set_defaults(exit_if_db_does_not_exist=True)
 
         subparser_changepw = subparsers.add_parser('changepw', help='Changes the master passphrase')
@@ -132,7 +132,7 @@ class CLI:
             self._client.call(*(args + (True,)))
 
     def _call_get(self):
-        credentials = self._client.call('get-credentials', self._args.domain)
+        credentials = self._client.call('get-credentials', self._args.context)
 
         if credentials[0][0] == '':
             print(credentials[0][1])
@@ -144,14 +144,14 @@ class CLI:
             print(password)
 
     def _call_add(self, password=None):
-        domain = self._args.domain
+        context = self._args.context
         username = self._args.username
         password = password or self._args.password or getpass()
 
         if username:
-            self._check_override('store-credentials', domain, username, password)
+            self._check_override('store-credentials', context, username, password)
         else:
-            self._check_override('store-password', domain, password)
+            self._check_override('store-password', context, password)
 
     def _call_new(self):
         password = generate_password()
@@ -159,30 +159,30 @@ class CLI:
         print(password)
 
     def _call_remove(self):
-        domain = self._args.domain
+        context = self._args.context
         username = self._args.username
 
         if username:
-            self._client.call('delete-credentials', domain, username)
+            self._client.call('delete-credentials', context, username)
         else:
-            self._client.call('delete-domain', domain)
+            self._client.call('delete-context', context)
 
     def _call_rename(self):
-        old_domain = self._args.old_domain
-        new_domain = self._args.new_domain
+        old_context = self._args.old_context
+        new_context = self._args.new_context
 
-        if new_domain is None:
-            new_domain = old_domain
+        if new_context is None:
+            new_context = old_context
 
         self._check_override('rename-credentials',
-                             old_domain,
-                             new_domain,
+                             old_context,
+                             new_context,
                              self._args.old_username,
                              self._args.new_username)
 
     def _call_list(self):
-        for domain in self._client.call('get-domains'):
-            print(domain)
+        for context in self._client.call('get-contexts'):
+            print(context)
 
     def _call_changepw(self):
         self._client.call('change-passphrase', prompt_new_passphrase())

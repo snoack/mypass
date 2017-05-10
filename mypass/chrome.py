@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Sebastian Noack
+# Copyright (c) 2014-2017 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@ def send_response(message):
     sys.stdout.buffer.flush()
 
 
-def get_possible_domains(url):
+def get_possible_contexts(url):
     parsed = urllib.parse.urlparse(url)
     parts = parsed.path.split('/')
 
@@ -84,9 +84,9 @@ class NativeMessagingHost:
         if client.status == Client.DATABASE_LOCKED:
             return {'status': 'database-locked'}
 
-        for domain in get_possible_domains(request['url']):
+        for context in get_possible_contexts(request['url']):
             try:
-                credentials = client.call('get-credentials', domain)
+                credentials = client.call('get-credentials', context)
             except CredentialsDoNotExist:
                 continue
 

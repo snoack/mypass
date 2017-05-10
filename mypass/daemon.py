@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Sebastian Noack
+# Copyright (c) 2014-2017 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -30,11 +30,11 @@ class Daemon:
         self._connections = []
 
         self._handle_get_credentials = db.get_credentials
-        self._handle_get_domains = db.get_domains
+        self._handle_get_contexts = db.get_contexts
         self._handle_store_credentials = db.store_credentials
         self._handle_store_password = db.store_password
         self._handle_delete_credentials = db.delete_credentials
-        self._handle_delete_domain = db.delete_domain
+        self._handle_delete_context = db.delete_context
         self._handle_rename_credentials = db.rename_credentials
         self._handle_change_passphrase = db.change_passphrase
 
