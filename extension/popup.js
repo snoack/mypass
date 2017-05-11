@@ -12,20 +12,29 @@
  * for more details.
  */
 
+var input = document.getElementById("passphrase");
+
 function revealCredentials(tabId) {
   chrome.runtime.sendMessage(
     {action: "reveal-credentials", tabId},
     function(status) {
       document.documentElement.dataset.status = status;
 
-      if (status == "ok")
-        setTimeout(function() { window.close(); }, 1000);
+      switch (status) {
+        case "database-locked":
+          input.focus();
+          break;
+
+        case "ok":
+          setTimeout(function() { window.close(); }, 1000);
+          break;
+      }
     }
   );
 }
 
-function setupPassphraseInput(tabId) {
-  var input = document.getElementById("passphrase");
+chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  var tabId = tabs[0].id;
 
   input.addEventListener("keyup", function(event) {
     if (event.keyCode != 13)
@@ -45,15 +54,7 @@ function setupPassphraseInput(tabId) {
     );
   });
 
-  input.addEventListener("input", function(event) {
-    input.classList.remove("error");
-  });
-}
-
-chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-  var tabId = tabs[0].id;
   revealCredentials(tabId);
-  setupPassphraseInput(tabId);
 });
 
 document.addEventListener("click", function(event) {

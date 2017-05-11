@@ -1,6 +1,6 @@
 {
   "name": "mypass",
-  "description": "Chrome integration for \"mypass\" password manager",
+  "description": "Browser integration for \"mypass\" password manager",
   "version": "1.9",
   "manifest_version": 2,
   "minimum_chrome_version": "35",
@@ -20,7 +20,15 @@
       "32": "icon-32.png",
       "38": "icon-38.png"
     },
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "title": "mypass",
+    "browser_style": true
+  },
+  "applications": {
+    "gecko": {
+      "id": "mypass@snoack.addons.mozilla.org",
+      "strict_min_version": "52.0"
+    }
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiGkb1NjNUU9spNBHVuZ3oEpd4fpqdg2upLQpi2F6cvPE6Fp/EOTOGek9UZlbVMFGShti3xO0hTtUhJBiEpHIkUypz59tLu0ELypmpurDuPDNDPbTAAlIFqnvpW4YARMI3P9V08L9NofF8yxiATGraAMuq4Z6a4wzHnLbwPKEDE7bXVyLJpbHsdgV5oEOygaBJkXQHXSjPR2I4FLB5/wCMwFzT/kPMTuOVz4NMRFYhNJhIz05S+UiEyAEbK6byPhJx+oyKw/FQK8YpqPyuNhX4r6MdozolKd3Ky7FkWJn97W27pPSnOfyTQ+2dq5IVaA1q4pGsRKiQlqNFpMAGSjfHQIDAQAB"
 }

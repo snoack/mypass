@@ -10,6 +10,10 @@ html[data-wrong-passphrase] #unlock-label {
   display: none;
 }
 
+body {
+  margin: 8px;
+}
+
 .oneline {
   white-space: nowrap;
 }
@@ -19,7 +23,7 @@ html[data-wrong-passphrase] #unlock-label {
 }
 
 #passphrase {
-  margin: -1000px 0;
+  margin: -10px 0;
   border: none;
   outline: none;
 }
@@ -32,9 +36,9 @@ html[data-wrong-passphrase] #unlock-label {
 <div id="database-locked" class="oneline">
   <span id="unlock-label">Unlock database:</span>
   <span id="retry-label">Wrong passphrase, try again:</span>
-  <input type="password" id="passphrase" autofocus>
+  <input type="password" id="passphrase">
 </div>
-<div id="database-does-not-exist" class="multiline">It seems this is the first time you use mypass. You have to add some passwords and create the database, before you can use the Chrome extension.</div>
+<div id="database-does-not-exist" class="multiline">It seems this is the first time you use mypass. You have to add some passwords and create the database, before you can use the browser extension.</div>
 <div id="not-installed" class="multiline">Failed to connect to host application. In order to use this extension you have to <a href="https://github.com/snoack/mypass">install mypass</a>.</div>
 
 <script src="popup.js"></script>

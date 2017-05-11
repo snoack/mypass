@@ -12,56 +12,70 @@ from distutils import log
 from setuptools import setup
 from setuptools.command.install import install
 
-CHROME_NATIVE_MESSAGING_MANIFEST_DIRS = {
-    'linux': (
-        '/etc/opt/chrome/native-messaging-hosts',
-        '/etc/chromium/native-messaging-hosts',
-    ),
-    'darwin': (
-        '/Library/Google/Chrome/NativeMessagingHosts',
-        '/Library/Application Support/Chromium/NativeMessagingHosts',
-    ),
+NATIVE_MESSAGING_MANIFEST_DIRS = {
+    'linux': [
+        ('chrome', '/etc/opt/chrome/native-messaging-hosts'),
+        ('chrome', '/etc/chromium/native-messaging-hosts'),
+        ('gecko', '/usr/lib/mozilla/native-messaging-hosts')
+    ],
+    'darwin': [
+        ('chrome', '/Library/Google/Chrome/NativeMessagingHosts'),
+        ('chrome', '/Library/Application Support/Chromium/NativeMessagingHosts'),
+        ('gecko', '/Library/Application Support/Mozilla/NativeMessagingHosts'),
+    ],
 }
 
 
-class install_with_chrome(install):
+class install_with_browser(install):
     user_options = install.user_options + [
         ('without-chrome', None, "Don't install native messaging manifest for Chrome extension"),
+        ('without-gecko', None, "Don't install native messaging manifest for Firefox extension"),
     ]
 
-    def _create_manifest(self):
+    def _create_manifest(self, type):
         manifest = OrderedDict()
         manifest['name'] = 'org.snoack.mypass'
         manifest['description'] = self.distribution.metadata.description
         manifest['path'] = self.distribution.get_command_obj('install_scripts').get_outputs()[0]
         manifest['type'] = 'stdio'
-        manifest['allowed_origins'] = ['chrome-extension://ddbeciaedkkgeiaellofogahfcolmkka/']
+
+        if type == 'gecko':
+            if self.without_gecko:
+                return None
+            manifest['allowed_extensions'] = ['mypass@snoack.addons.mozilla.org']
+        else:
+            if self.without_chrome:
+                return None
+            manifest['allowed_origins'] = ['chrome-extension://ddbeciaedkkgeiaellofogahfcolmkka/']
+
         return manifest
 
     def initialize_options(self):
         super().initialize_options()
         self.without_chrome = 0
+        self.without_gecko = 0
 
     def run(self):
         super().run()
 
-        if not self.without_chrome:
-            manifest = self._create_manifest()
+        for type, dir in NATIVE_MESSAGING_MANIFEST_DIRS[sys.platform]:
+            manifest = self._create_manifest(type)
+            if not manifest:
+                continue
 
-            for dir in CHROME_NATIVE_MESSAGING_MANIFEST_DIRS[sys.platform]:
-                dirname = (self.root or '') + dir
-                self.mkpath(dirname)
+            dirname = (self.root or '') + dir
+            self.mkpath(dirname)
 
-                outfile = os.path.join(dirname, manifest['name'] + '.json')
-                log.info("Writing %s", outfile)
+            outfile = os.path.join(dirname, manifest['name'] + '.json')
+            log.info("Writing %s", outfile)
 
-                if not self.dry_run:
-                    with open(outfile, 'w') as file:
-                        json.dump(manifest, file, indent='\t')
+            if not self.dry_run:
+                with open(outfile, 'w') as file:
+                    json.dump(manifest, file, indent='\t')
 
 cmdclass = {}
-if sys.platform in CHROME_NATIVE_MESSAGING_MANIFEST_DIRS:
-    cmdclass['install'] = install_with_chrome
+if sys.platform in NATIVE_MESSAGING_MANIFEST_DIRS:
+    cmdclass['install'] = install_with_browser
 
 setup(name='mypass',
       description='A password manager',

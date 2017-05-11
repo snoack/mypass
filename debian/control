@@ -9,5 +9,5 @@ Homepage: https://github.com/snoack/mypass
 Package: mypass
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, python3-crypto
-Description: Command line password manager and Chrome extension
+Description: Command line password manager and browser extension
 

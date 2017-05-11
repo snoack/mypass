@@ -3,7 +3,7 @@ mypass
 
 A password manager that can be used conviniently from the command line. I
 prefer the command line over the GUI, and the lack of password managers that
-serve this use case, motivated me to write my own. It also comes with a Chrome
+serve this use case, motivated me to write my own. It also comes with a browser
 extension in order to conviniently but securely fill out logins on the web.
 
 
@@ -49,11 +49,11 @@ Stores credentials for the given *context*.
 
 The *context* can be any unique keyword which you relate to these credentials. But
 if the credentials are for a website, it is recommended to use the corresponding
-domain as *context*, so that the Chrome extension finds the credentials, see below.
+domain as *context*, so that the browser extension finds the credentials, see below.
 
 The *username* is optional, but specifying a username if there is any, allows you
 to store multiple username/password pairs for the same context. Also, if a username
-is given, it will be used by the Chrome extension when filling out web forms.
+is given, it will be used by the browser extension when filling out web forms.
 
 If *password* is omitted you will be prompted for the password. **Passing the
 password on the command line is NOT recommeded**, except for import scripts,
@@ -143,15 +143,14 @@ path = /home/user/.config/mypass/db
 ```
 
 
-Integration with Chromium/Google Chrome
----------------------------------------
+Integration with Chrome and Firefox
+-----------------------------------
 
 If you installed `mypass` on Debian/Ubuntu from the PPA above, next time you
-start Chromium, the extension should already be active. If you use Google Chrome
-and/or don't run a Debian based Linux distribution, you can install the
-extension from the [Chrome Web Store][1]. Installation and usage of the Chrome
-extension is optional. However, in order to use the Chrome extension you must
-have the command line utility installed as well.
+start Chromium or Firefox, the extension should be active. You can also install
+the extension from the [Chrome Web Store][1]. Note that while the browser
+extension is optional, it cannot be used standalone but requires the command
+line utility to be installed as well.
 
 The extension adds a button to the browser bar that when clicked, fills out login
 forms in the active tab, if the document's domain and path (partially) match the
@@ -163,7 +162,7 @@ for example, credentials from following contexts are considered, in this order:
 3. `www.example.com`
 4. `example.com`
 
-The Chrome extension is intentionally kept simple and doesn't provide functionality
+The browser extension is intentionally kept simple and doesn't provide functionality
 to manage credentials. Please use the command line utility therefore.
 
 
