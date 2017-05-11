@@ -1,3 +1,10 @@
+mypass (1.10) zesty; urgency=medium
+
+  * Added Firefox support
+  * Ignore dynamically created frames
+
+ -- Sebastian Noack <sebastian.noack@gmail.com>  Thu, 11 May 2017 13:40:00 +0200
+
 mypass (1.9) zesty; urgency=medium
 
   * Use faster PBKDF2 implementation with more iterations
