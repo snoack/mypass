@@ -95,6 +95,9 @@ def spawn_daemon(db):
                 signal.signal(signal.SIGHUP, signal.SIG_IGN)
                 signal.signal(signal.SIGTERM, unlink_socket)
 
+                os.close(sys.stdin.fileno())
+                os.close(sys.stdout.fileno())
+
                 Daemon(sock, db).run()
             finally:
                 unlink_socket()
