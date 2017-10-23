@@ -1,0 +1,66 @@
+_mypass()
+{
+  local cur=${COMP_WORDS[COMP_CWORD]}
+
+  if [[ $COMP_CWORD -eq 1 ]]; then
+    COMPREPLY=($(
+      IFS=,
+      compgen -W "$(mypass --help | grep -oP '^usage:.*\{\K[^}]*')" -- "$cur"
+    ))
+    return 0
+  fi
+
+  local cmd="${COMP_WORDS[1]}"
+  local context complete_for completion_cmd
+
+  if [[ ( "$cmd" == "get" || "$cmd" == "add" ||
+          "$cmd" == "new" || "$cmd" == "remove" ) && $COMP_CWORD -eq 2 ]]; then
+    complete_for=contexts
+  elif [[ "$cmd" == "remove" && $COMP_CWORD -eq 3 ]]; then
+    complete_for=usernames
+    context="${COMP_WORDS[COMP_CWORD-1]}"
+  elif [[ "$cmd" == "rename" ]]; then
+    local i=2
+    local non_option_words=()
+    while [[ $i -lt ${#COMP_WORDS[@]} ]]; do
+      if [[ "${COMP_WORDS[i]}" != --* ]]; then
+        non_option_words+=($i)
+        (( i += 1 ))
+      elif [[ "${COMP_WORDS[i+1]}" == "=" ]]; then
+        (( i += 3 ))
+      else
+        (( i += 2 ))
+      fi
+     done
+
+    if [[ $COMP_CWORD -eq ${non_option_words[0]} ]] ||
+       echo "${COMP_LINE:0:COMP_POINT}" |
+       grep -qoP -- '--new-context(\s+|=)\S*$'; then
+      complete_for=contexts
+    elif [[ $COMP_CWORD -eq ${non_option_words[1]} ]]; then
+      complete_for=usernames
+      context="${COMP_WORDS[non_option_words[0]]}"
+    fi
+  fi
+
+  case $complete_for in
+    contexts)
+      completion_cmd="mypass list"
+      ;;
+    usernames)
+      completion_cmd="mypass get -- '$context' | grep -oP '^.+(?=  )'"
+      ;;
+  esac
+
+  # By wrapping the call into setsid detaching the tty, and closing stdin,
+  # we cause getpass() to fail, so we don't get prompted for the passphrase
+  # if the database is locked.
+  [[ -n "$completion_cmd" ]] && COMPREPLY=($(
+    IFS=$'\n'
+    compgen -W "$(eval setsid $completion_cmd 2>/dev/null <&-)" -- "$cur"
+  ))
+
+  return 0
+}
+
+complete -F _mypass mypass

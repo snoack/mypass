@@ -31,6 +31,8 @@ command (as root):
 pip3 install git+https://github.com/snoack/mypass
 ```
 
+If you want completion for subcommands, contexts and usernames when you hit
+*tab* in Bash, copy [`bash-completion/mypass`][1] to `/etc/bash_completion.d/`.
 
 Usage
 -----
@@ -148,7 +150,7 @@ Integration with Chrome and Firefox
 
 If you installed `mypass` on Debian/Ubuntu from the PPA above, next time you
 start Chromium or Firefox, the extension should be active. You can also install
-the extension from the [Chrome Web Store][1]. Note that while the browser
+the extension from the [Chrome Web Store][2]. Note that while the browser
 extension is optional, it cannot be used standalone but requires the command
 line utility to be installed as well.
 
@@ -165,5 +167,5 @@ for example, credentials from following contexts are considered, in this order:
 The browser extension is intentionally kept simple and doesn't provide functionality
 to manage credentials. Please use the command line utility therefore.
 
-
-[1]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka
+[1]: https://raw.githubusercontent.com/snoack/mypass/master/bash-completion/mypass
+[2]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka

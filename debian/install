@@ -1,2 +1,3 @@
 extension/* usr/share/chromium/extensions/mypass/
+bash-completion/mypass etc/bash_completion.d/
 debian/chromium/mypass etc/chromium.d/
