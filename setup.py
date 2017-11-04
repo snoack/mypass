@@ -1,9 +1,4 @@
 import sys
-
-if sys.version_info[0] < 3:
-    sys.stderr.write('Only Python 3 supported\n')
-    sys.exit(1)
-
 import os
 import json
 from collections import OrderedDict
@@ -11,6 +6,10 @@ from distutils import log
 
 from setuptools import setup
 from setuptools.command.install import install
+
+if sys.version_info[0] < 3:
+    sys.stderr.write('Only Python 3 supported\n')
+    sys.exit(1)
 
 NATIVE_MESSAGING_MANIFEST_DIRS = {
     'linux': [
@@ -72,6 +71,7 @@ class install_with_browser(install):
             if not self.dry_run:
                 with open(outfile, 'w') as file:
                     json.dump(manifest, file, indent='\t')
+
 
 cmdclass = {}
 if sys.platform in NATIVE_MESSAGING_MANIFEST_DIRS:

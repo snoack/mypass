@@ -16,11 +16,12 @@ import platform
 import os
 import sys
 
+
 def _commoncrypto_pbkdf2(data, salt, iterations, buf):
-    return 1 - _crypto.CCKeyDerivationPBKDF(2, # PBKDF2
+    return 1 - _crypto.CCKeyDerivationPBKDF(2,  # PBKDF2
                                             data, len(data),
                                             salt, len(salt),
-                                            3, # SHA256
+                                            3,  # SHA256
                                             iterations,
                                             buf, len(buf))
 
@@ -38,14 +39,14 @@ try:
         _crypto = ctypes.CDLL(os.path.basename(ctypes.util.find_library('System')))
         _crypto.CCKeyDerivationPBKDF.restype = ctypes.c_int
         _crypto.CCKeyDerivationPBKDF.argtypes = [ctypes.c_uint32,
-                                                ctypes.c_char_p,
-                                                ctypes.c_size_t,
-                                                ctypes.c_char_p,
-                                                ctypes.c_size_t,
-                                                ctypes.c_uint32,
-                                                ctypes.c_uint,
-                                                ctypes.c_char_p,
-                                                ctypes.c_size_t]
+                                                 ctypes.c_char_p,
+                                                 ctypes.c_size_t,
+                                                 ctypes.c_char_p,
+                                                 ctypes.c_size_t,
+                                                 ctypes.c_uint32,
+                                                 ctypes.c_uint,
+                                                 ctypes.c_char_p,
+                                                 ctypes.c_size_t]
         _pbkdf2 = _commoncrypto_pbkdf2
     else:
         if sys.platform == 'win32':
@@ -68,7 +69,6 @@ try:
         _crypto.PKCS5_PBKDF2_HMAC.restype = ctypes.c_int
         _crypto.EVP_sha256.restype = ctypes.c_void_p
         _pbkdf2 = _openssl_pbkdf2
-
 except (OSError, AttributeError) as e:
     raise ImportError('Cannot find a compatible cryptographic library. {}'.format(e))
 
