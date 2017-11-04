@@ -1,3 +1,11 @@
+mypass (1.11) zesty; urgency=medium
+
+  * Fixed, stdout not closing after spawning daemon
+  * Added bash completion
+
+ -- Sebastian Noack <sebastian.noack@gmail.com>  Sat, 04 Nov 2017 01:20:00 -0400
+
+
 mypass (1.10) zesty; urgency=medium
 
   * Added Firefox support
