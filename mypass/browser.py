@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2017 Sebastian Noack
+# Copyright (c) 2014-2020 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -11,14 +11,13 @@
 # for more details.
 
 import sys
-import os
 import struct
 import json
 import re
 import urllib.parse
 
-from mypass import CredentialsDoNotExist, WrongPassphraseOrBrokenDatabase
-from mypass.client import Client
+from mypass import CredentialsDoNotExist, DaemonFailed
+from mypass.client import Client, database_exists
 
 
 def parse_request(length_bytes):
@@ -56,8 +55,6 @@ def get_possible_contexts(url):
 class NativeMessagingHost:
 
     def __init__(self):
-        os.umask(0o077)
-
         while True:
             length_bytes = sys.stdin.buffer.read(4)
             if not length_bytes:
@@ -66,22 +63,22 @@ class NativeMessagingHost:
             send_response(self._process_request(parse_request(length_bytes)))
 
     def _handle_unlock_database(self, client, request):
-        if client.status == Client.DATABASE_LOCKED:
+        if client.database_locked:
             try:
                 client.unlock_database(request['passphrase'])
-            except WrongPassphraseOrBrokenDatabase:
+            except DaemonFailed:
                 return {'status': 'failure'}
 
         return {'status': 'ok'}
 
     def _handle_lock_database(self, client, request):
-        if client.status == Client.DATABASE_UNLOCKED:
+        if not client.database_locked:
             client.call('shutdown')
 
         return {'status': 'ok'}
 
     def _handle_get_credentials(self, client, request):
-        if client.status == Client.DATABASE_LOCKED:
+        if client.database_locked:
             return {'status': 'database-locked'}
 
         for context in get_possible_contexts(request['url']):
@@ -95,8 +92,8 @@ class NativeMessagingHost:
         return {'status': 'no-credentials'}
 
     def _process_request(self, request):
-        with Client() as client:
-            if client.status == Client.DATABASE_DOES_NOT_EXIST:
-                return {'status': 'database-does-not-exist'}
+        if not database_exists():
+            return {'status': 'database-does-not-exist'}
 
+        with Client() as client:
             return getattr(self, '_handle_' + request['action'].replace('-', '_'))(client, request)

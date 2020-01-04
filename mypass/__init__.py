@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Sebastian Noack
+# Copyright (c) 2014-2020 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -23,6 +23,10 @@ class ConfigError(Error):
     pass
 
 
+class DatabaseError(Error):
+    pass
+
+
 class CredentialsDoNotExist(Error):
 
     def __str__(self):
@@ -35,10 +39,10 @@ class CredentialsAlreadytExist(Error):
         return 'Credentials already exist'
 
 
-class WrongPassphraseOrBrokenDatabase(Error):
+class DaemonFailed(Error):
 
     def __str__(self):
-        return 'Wrong passphrase or broken database'
+        return 'Failed to spawn daemon'
 
 
 class ConnectionLost(Error):

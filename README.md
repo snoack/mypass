@@ -3,8 +3,9 @@ mypass
 
 [![Build Status](https://travis-ci.org/snoack/mypass.svg?branch=master)](https://travis-ci.org/snoack/mypass)
 
-A password manager that can be used conviniently from the command line. I
-prefer the command line over the GUI, and the lack of password managers that
+A secure password manager for Linux that can be used conviniently from the command line.
+
+I prefer the command line over the GUI, and the lack of password managers that
 serve this use case, motivated me to write my own. It also comes with a browser
 extension in order to conviniently but securely fill out logins on the web.
 
@@ -26,7 +27,7 @@ apt-get install mypass
 
 ### Using pip
 
-Make sure you have Python 3, *pip* and *git* installed. Then run following
+Make sure you have Python 3, SQLCipher and Git installed. Then run following
 command (as root):
 
 ```
@@ -133,13 +134,12 @@ override any of the following presets:
 
 ```ini
 [daemon]
-# If set to true, the daemon won't spawn, and you have to enter the
-# passphrase, the credentials are encrypted with, every time.
-disabled = false
-
 # Minutes of inactivity after which the daemon shuts down, and you have
 # to enter the passphrase, the credentials are encrypted with, again.
 timeout = 30
+
+# Path to log file any excpetions thrown by the daemon are written to.
+logfile = /home/user/.config/mypass/log
 
 [database]
 # Path to the encrypted file storing the credentials.

@@ -8,6 +8,6 @@ Homepage: https://github.com/snoack/mypass
 
 Package: mypass
 Architecture: all
-Depends: ${misc:Depends}, ${python3:Depends}, python3-crypto
+Depends: ${misc:Depends}, ${python3:Depends}, libsqlcipher0
 Description: Command line password manager and browser extension
 

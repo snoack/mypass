@@ -1,4 +1,4 @@
-# Copyright (c) 2014 Sebastian Noack
+# Copyright (c) 2014-2020 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,60 +15,45 @@ import configparser
 
 from mypass import ConfigError
 
-if os.name == 'nt':
-    DATA_DIR = os.path.expandvars('%LOCALAPPDATA%')
-else:
-    DATA_DIR = os.path.expanduser('~/.config')
-DATA_DIR = os.path.join(DATA_DIR, 'mypass')
+DATA_DIR = os.path.expanduser('~/.config/mypass')
 
 SCHEMA = {
     'daemon': {
-        'disabled': False,
         'timeout': 30,
+        'logfile': DATA_DIR + '/log',
     },
     'database': {
-        'path': os.path.join(DATA_DIR, 'db'),
+        'path': DATA_DIR + '/db',
     }
 }
 
-config = {}
-_error = None
+_parser = None
 
 
-def check_config_errors():
-    if _error is not None:
-        raise ConfigError(_error)
+def get_config(section, option):
+    global _parser
 
-
-def _parse():
-    global _error
-
-    parser = configparser.ConfigParser()
-    try:
-        parser.read(os.path.join(DATA_DIR, 'config.ini'))
-    except UnicodeDecodeError:
-        _error = 'Unexpected encoding in config file'
-    except configparser.ParsingError:
-        _error = 'Invalid syntax in config file'
-
-    for section, default_options in SCHEMA.items():
-        options = config[section] = {}
-
-        for option, value in default_options.items():
-            expected_type = type(value)
-
+    if not _parser:
+        _parser = configparser.ConfigParser()
+        try:
             try:
-                if expected_type is bool:
-                    value = parser.getboolean(section, option)
-                else:
-                    value = expected_type(parser.get(section, option))
-            except ValueError:
-                if not _error:
-                    _error = 'Invalid value for option {!r} in section {!r} in config file'.format(option, section)
-            except configparser.Error:
-                pass
+                _parser.read(os.path.join(DATA_DIR, 'config.ini'))
+            except UnicodeDecodeError:
+                raise ConfigError('Unexpected encoding in config file')
+            except configparser.ParsingError:
+                raise ConfigError('Invalid syntax in config file')
+        except:
+            _parser = None
+            raise
 
-            options[option] = value
+    default = SCHEMA[section][option]
+    if isinstance(default, bool):
+        func = _parser.getboolean
+    else:
+        func = getattr(_parser, 'get' + type(default).__name__, _parser.get)
 
-
-_parse()
+    try:
+        return func(section, option, fallback=default)
+    except ValueError:
+        raise ConfigError('Invalid value for option {!r} in section '
+                          '{!r} in config file'.format(option, section))

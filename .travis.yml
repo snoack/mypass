@@ -1,5 +1,4 @@
 language: python
-sudo: false
 
 python:
   - "3.8"
@@ -11,6 +10,9 @@ python:
 matrix:
   include:
     - env: TOXENV=flake8
+
+before_install:
+  - sudo apt-get -y install libsqlcipher0
 
 install:
   - pip install tox-travis
