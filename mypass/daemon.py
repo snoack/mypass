@@ -51,35 +51,35 @@ class Daemon:
         pickle.dump(response, file)
 
     def run(self):
-        with select.epoll() as epoll:
-            epoll.register(self._socket, select.EPOLLIN)
-            connections = {}
+        poll = select.poll()
+        poll.register(self._socket, select.POLLIN)
+        connections = {}
 
-            try:
-                while True:
-                    events = epoll.poll(-1 if connections else self._timeout)
+        try:
+            while True:
+                events = poll.poll(-1 if connections else self._timeout)
 
-                    for fd, _ in events:
-                        if fd == self._socket.fileno():
-                            conn = self._socket.accept()[0]
-                            conn_fd = conn.fileno()
-                            epoll.register(conn_fd, select.EPOLLIN)
-                            connections[conn_fd] = conn.makefile('rwb', 0)
-                            conn.close()
-                        else:
-                            file = connections[fd]
-                            try:
-                                self._serve_request(file)
-                            except EOFError:
-                                epoll.unregister(fd)
-                                del connections[fd]
-                                file.close()
+                for fd, _ in events:
+                    if fd == self._socket.fileno():
+                        conn = self._socket.accept()[0]
+                        conn_fd = conn.fileno()
+                        poll.register(conn_fd, select.POLLIN)
+                        connections[conn_fd] = conn.makefile('rwb', 0)
+                        conn.close()
+                    else:
+                        file = connections[fd]
+                        try:
+                            self._serve_request(file)
+                        except EOFError:
+                            poll.unregister(fd)
+                            del connections[fd]
+                            file.close()
 
-                    if not events or self._shutdown:
-                        break
-            finally:
-                for file in connections.values():
-                    file.close()
+                if not events or self._shutdown:
+                    break
+        finally:
+            for file in connections.values():
+                file.close()
 
 
 if __name__ == '__main__':
@@ -97,7 +97,7 @@ if __name__ == '__main__':
             sock.bind(SOCKET)
             sock.listen(5)
 
-            daemon = Daemon(sock, db, get_config('daemon', 'timeout') * 60)
+            daemon = Daemon(sock, db, get_config('daemon', 'timeout') * 60000)
 
             signal.signal(signal.SIGINT, signal.SIG_IGN)
             signal.signal(signal.SIGHUP, signal.SIG_IGN)

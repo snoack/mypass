@@ -3,7 +3,8 @@ mypass
 
 [![Build Status](https://travis-ci.org/snoack/mypass.svg?branch=master)](https://travis-ci.org/snoack/mypass)
 
-A secure password manager for Linux that can be used conviniently from the command line.
+A secure password manager for UNIX (Linux, BSD) that can be used conviniently
+from the command line.
 
 I prefer the command line over the GUI, and the lack of password managers that
 serve this use case, motivated me to write my own. It also comes with a browser

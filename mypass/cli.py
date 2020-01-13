@@ -49,6 +49,7 @@ class CLI:
 
     def __init__(self):
         try:
+            self._interactive = sys.stdin and sys.stdin.isatty()
             self._parse_arguments()
 
             with Client() as self._client:
@@ -111,9 +112,14 @@ class CLI:
                 sys.exit(0)
 
             if database_exists():
+                if not self._interactive:
+                    print('Database is locked', file=sys.stderr)
+                    sys.exit(1)
+
                 passphrase = getpass('Unlock database: ')
             else:
-                if getattr(self._args, 'fail_if_db_does_not_exist', False):
+                if not self._interactive or \
+                   getattr(self._args, 'fail_if_db_does_not_exist', False):
                     print('Database does not exist', file=sys.stderr)
                     sys.exit(1)
 
@@ -124,8 +130,13 @@ class CLI:
     def _check_override(self, *args):
         try:
             self._client.call(*args)
-        except CredentialsAlreadytExist:
-            if input('Credentials already exist. Do you want to override them? [y/N] ')[:1].lower() != 'y':
+        except CredentialsAlreadytExist as e:
+            if not self._interactive:
+                print(e, file=sys.stderr)
+                sys.exit(1)
+
+            if input('Credentials already exist. Do you want to '
+                     'override them? [y/N] ')[:1].lower() != 'y':
                 print('Aborted', file=sys.stderr)
                 sys.exit(1)
 

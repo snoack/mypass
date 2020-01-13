@@ -5,7 +5,7 @@ _mypass()
   if [[ $COMP_CWORD -eq 1 ]]; then
     COMPREPLY=($(
       IFS=,
-      compgen -W "$(mypass --help | grep -oP '^usage:.*\{\K[^}]*')" -- "$cur"
+      compgen -W "$(mypass --help | sed -n -e 's/^  {\(.*\)}.*/\1/p')" -- "$cur"
     ))
     return 0
   fi
@@ -35,7 +35,7 @@ _mypass()
 
     if [[ $COMP_CWORD -eq ${non_option_words[0]} ]] ||
        echo "${COMP_LINE:0:COMP_POINT}" |
-       grep -qoP -- '--new-context(\s+|=)\S*$'; then
+       grep -qoE -- '--new-context(  *|=)[^ ]*$'; then
       complete_for=contexts
     elif [[ $COMP_CWORD -eq ${non_option_words[1]} ]]; then
       complete_for=usernames
@@ -48,16 +48,13 @@ _mypass()
       completion_cmd="mypass list"
       ;;
     usernames)
-      completion_cmd="mypass get -- '$context' | grep -oP '^.+(?=  )'"
+      completion_cmd="mypass get -- '$context' | sed -n -e 's/\([^ ].*\)  .*/\1/p'"
       ;;
   esac
 
-  # By wrapping the call into setsid detaching the tty, and closing stdin,
-  # we cause getpass() to fail, so we don't get prompted for the passphrase
-  # if the database is locked.
   [[ -n "$completion_cmd" ]] && COMPREPLY=($(
     IFS=$'\n'
-    compgen -W "$(eval setsid $completion_cmd 2>/dev/null <&-)" -- "$cur"
+    compgen -W "$(eval $completion_cmd 2>/dev/null <&-)" -- "$cur"
   ))
 
   return 0
