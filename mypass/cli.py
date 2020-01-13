@@ -21,17 +21,19 @@ from mypass.client import Client, database_exists
 
 
 def generate_password():
+    rand = random.SystemRandom()
+
     chars = [
-        random.choice(string.ascii_lowercase),
-        random.choice(string.ascii_uppercase),
-        random.choice(string.digits),
-        random.choice(string.punctuation),
+        rand.choice(string.ascii_lowercase),
+        rand.choice(string.ascii_uppercase),
+        rand.choice(string.digits),
+        rand.choice(string.punctuation),
     ]
 
     while len(chars) < 16:
-        chars.append(chr(random.randint(33, 126)))
+        chars.append(chr(rand.randint(33, 126)))
 
-    random.shuffle(chars)
+    rand.shuffle(chars)
     return ''.join(chars)
 
 
