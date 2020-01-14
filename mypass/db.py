@@ -118,6 +118,29 @@ def _clear_orphans(cursor, target_table, updated_table, id):
                        'WHERE id = ?'.format(target_table), (id,))
 
 
+def _rename_or_alias_context(sql, db, old_context, new_context, override):
+    with db:
+        cursor = db.cursor()
+
+        result = None
+        if override:
+            cursor.execute('SELECT id FROM contexts '
+                           'WHERE context = ?', (new_context,))
+            result = cursor.fetchone()
+
+        try:
+            cursor.execute(sql.format(' OR REPLACE' if override else ''),
+                           (new_context, old_context))
+        except sqlite3.IntegrityError:
+            raise CredentialsAlreadytExist
+
+        if cursor.rowcount == 0:
+            raise CredentialsDoNotExist
+
+        if result:
+            _clear_orphans(cursor, 'credentials', 'contexts', result[0])
+
+
 class Database:
     def __init__(self, filename, passphrase):
         self._db = _connect(filename, passphrase, migrate=True)
@@ -199,30 +222,17 @@ class Database:
             _clear_orphans(cursor, 'contexts', 'credentials', old_id)
 
     def rename_context(self, old_context, new_context, override=False):
-        with self._db:
-            cursor = self._db.cursor()
+        _rename_or_alias_context('''UPDATE{} contexts
+                                         SET context = ?
+                                       WHERE context = ?''',
+                                 self._db, old_context, new_context, override)
 
-            result = None
-            if override:
-                cursor.execute('SELECT id FROM contexts '
-                               'WHERE context = ?', (new_context,))
-                result = cursor.fetchone()
-
-            try:
-                cursor.execute(
-                    '''UPDATE{} contexts
-                            SET context = ?
-                          WHERE context = ?'''.format(' OR REPLACE' if override else ''),
-                    (new_context, old_context)
-                )
-            except sqlite3.IntegrityError:
-                raise CredentialsAlreadytExist
-
-            if cursor.rowcount == 0:
-                raise CredentialsDoNotExist
-
-            if result:
-                _clear_orphans(cursor, 'credentials', 'contexts', result[0])
+    def add_context_alias(self, context, context_alias, override=True):
+        _rename_or_alias_context('''INSERT{} INTO contexts (id, context)
+                                           SELECT id, ?
+                                             FROM contexts
+                                            WHERE context = ?''',
+                                 self._db, context, context_alias, override)
 
     def change_passphrase(self, passphrase):
         _execute_pragma_with_arg(self._db, 'rekey', passphrase)

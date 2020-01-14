@@ -35,6 +35,7 @@ def test_cli():
     run('mypass add foo.example.com', [('New passphrase: ', 'masterpw'),
                                        ('Verify passphrase: ', 'masterpw'),
                                        ('Password: ', 'password1')])
+    run('mypass alias foo.example.com same-as-foo.example.com')
     run('mypass add bar.example.com jane', [('Password: ', 'password2')])
     run('mypass add bar.example.com john password3')
 
@@ -56,29 +57,34 @@ def test_cli():
     run('mypass lock')
     run('mypass list', [('Unlock database: ', 'masterpw'),
                         ('bar.example.com', None),
-                        ('foo.example.com', None)])
+                        ('foo.example.com', None),
+                        ('same-as-foo.example.com', None)])
     run('mypass get foo.example.com', [('password1', None)])
     run('mypass get bar.example.com', [('jack  ' + passwd, None),
                                        ('jane  password2', None),
                                        ('john  password3', None)])
     run('mypass remove foo.example.com')
     run('mypass remove bar.example.com jack')
-    run('mypass list', [('bar.example.com', None)])
+    run('mypass list', [('bar.example.com', None),
+                        ('same-as-foo.example.com', None)])
     run('mypass get bar.example.com', [('jane  password2', None),
                                        ('john  password3', None)])
-    run('mypass rename bar.example.com --new-context=foo.example.com')
-    run('mypass rename foo.example.com jane --new-context=bar.example.com')
-    run('mypass rename foo.example.com john --new-username=jeff')
+    run('mypass get same-as-foo.example.com', [('password1', None)])
+    run('mypass rename bar.example.com --new-context=new.example.com')
+    run('mypass rename new.example.com jane --new-context=bar.example.com')
+    run('mypass rename new.example.com john --new-username=jeff')
     run('mypass list', [('bar.example.com', None),
-                        ('foo.example.com', None)])
-    run('mypass get foo.example.com', [('jeff  password3', None)])
+                        ('new.example.com', None),
+                        ('same-as-foo.example.com', None)])
+    run('mypass get new.example.com', [('jeff  password3', None)])
     run('mypass get bar.example.com', [('password2', None)])
     run('mypass changepw', [('New passphrase: ', 'masterpw2'),
                             ('Verify passphrase: ', 'masterpw2')])
     run('mypass lock')
     run('mypass list', [('Unlock database: ', 'masterpw2'),
                         ('bar.example.com', None),
-                        ('foo.example.com', None)])
+                        ('new.example.com', None),
+                        ('same-as-foo.example.com', None)])
 
 
 def test_bash_completion():
@@ -93,13 +99,15 @@ def test_bash_completion():
 
     for input, completed in [('mypass g', 'et'),
                              ('mypass get e', 'xample.com'),
-                             ('mypass a', 'dd'),
+                             ('mypass ad', 'd'),
                              ('mypass add e', 'xample.com'),
                              ('mypass n', 'ew'),
                              ('mypass new e', 'xample.com'),
                              ('mypass rem', 'ove'),
                              ('mypass remove e', 'xample.com'),
                              ('mypass remove example.com j', 'oe'),
+                             ('mypass al', 'ias'),
+                             ('mypass alias e', 'xample.com'),
                              ('mypass ren', 'ame'),
                              ('mypass rename e', 'xample.com'),
                              ('mypass rename example.com j', 'oe'),

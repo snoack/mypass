@@ -36,6 +36,7 @@ class Daemon:
         self._handle_rename_credentials = db.rename_credentials
         self._handle_rename_context = db.rename_context
         self._handle_change_passphrase = db.change_passphrase
+        self._handle_add_context_alias = db.add_context_alias
 
     def _handle_shutdown(self):
         self._shutdown = True

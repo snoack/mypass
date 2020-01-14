@@ -14,7 +14,8 @@ _mypass()
   local context complete_for completion_cmd
 
   if [[ ( "$cmd" == "get" || "$cmd" == "add" ||
-          "$cmd" == "new" || "$cmd" == "remove" ) && $COMP_CWORD -eq 2 ]]; then
+          "$cmd" == "new" || "$cmd" == "remove" ||
+          "$cmd" == "alias" ) && $COMP_CWORD -eq 2 ]]; then
     complete_for=contexts
   elif [[ "$cmd" == "remove" && $COMP_CWORD -eq 3 ]]; then
     complete_for=usernames

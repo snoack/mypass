@@ -115,6 +115,15 @@ mypass rename --new-username=rose example.com
 ```
 
 
+#### `mypass alias <context> <alias>`
+
+Creates a new context that refers to the credentials of an existing context.
+
+Changes to the credentials performed under either context will be reflected
+when looking up the credentials for the other context. Removing either context
+doesn't remove the credentials as long as the other context exists.
+
+
 #### `mypass changepw`
 
 Prompts you for a new passphrase. Existing credentials are re-encrypted

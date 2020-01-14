@@ -100,6 +100,11 @@ class CLI:
         subparser_list = subparsers.add_parser('list', help='Writes the contexts of all passwords to stdout')
         subparser_list.set_defaults(fail_if_db_does_not_exist=True)
 
+        subparser_alias = subparsers.add_parser('alias', help='Creates a new context that refers to the credentials of an existing context')
+        subparser_alias.add_argument('context')
+        subparser_alias.add_argument('alias')
+        subparser_alias.set_defaults(fail_if_db_does_not_exist=True)
+
         subparser_changepw = subparsers.add_parser('changepw', help='Changes the master passphrase')
         subparser_changepw.set_defaults(fail_if_db_does_not_exist=True)
 
@@ -195,6 +200,9 @@ class CLI:
     def _call_list(self):
         for context in self._client.call('get-contexts'):
             print(context)
+
+    def _call_alias(self):
+        self._check_override('add-context-alias', self._args.context, self._args.alias)
 
     def _call_changepw(self):
         self._client.call('change-passphrase', prompt_new_passphrase())
