@@ -2,6 +2,7 @@ mypass
 ======
 
 [![Build Status](https://travis-ci.org/snoack/mypass.svg?branch=master)](https://travis-ci.org/snoack/mypass)
+[![Pypi Entry](https://badge.fury.io/py/mypass.svg)](https://pypi.python.org/pypi/mypass)
 
 A secure password manager for UNIX (Linux, BSD) that can be used conviniently
 from the command line.
@@ -28,11 +29,11 @@ apt-get install mypass
 
 ### Using pip
 
-Make sure you have Python 3, SQLCipher and Git installed. Then run following
+Make sure you have Python 3 and SQLCipher installed. Then run following
 command (optionally as root for system-wide installation):
 
 ```
-pip3 install git+https://github.com/snoack/mypass
+pip3 install mypass
 ```
 
 

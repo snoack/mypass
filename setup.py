@@ -39,8 +39,13 @@ class Install(install):
         self.copy_tree('extension', os.path.join(self.install_lib, 'mypass', 'extension'))
 
 
+with open(os.path.join(os.path.dirname(__file__), 'README.md')) as file:
+    long_description = file.read()
+
 setup(name='mypass',
-      description='A password manager',
+      description='A secure password manager with command line interface',
+      long_description=long_description,
+      long_description_content_type='text/markdown',
       author='Sebastian Noack',
       author_email='sebstian.noack@gmail.com',
       url='https://github.com/snoack/mypass',
@@ -49,4 +54,15 @@ setup(name='mypass',
       scripts=['bin/mypass'],
       install_requires=['pycrypto', 'argcomplete'],
       py_requires='>=3.4',
-      cmdclass={'install': Install})
+      cmdclass={'install': Install},
+      classifiers=[
+          'Development Status :: 5 - Production/Stable',
+          'Intended Audience :: End Users/Desktop',
+          'Intended Audience :: Information Technology',
+          'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+          'Operating System :: POSIX',
+          'Programming Language :: Python',
+          'Programming Language :: Python :: 3',
+          'Topic :: Security',
+          'Topic :: Utilities',
+      ])
