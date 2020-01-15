@@ -24,7 +24,10 @@ SCHEMA = {
     },
     'database': {
         'path': DATA_DIR + '/db',
-    }
+    },
+    'password': {
+        'length': 16,
+    },
 }
 
 _parser = None

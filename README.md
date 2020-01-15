@@ -161,6 +161,10 @@ logfile = /home/user/.config/mypass/log
 [database]
 # Path to the encrypted file storing the credentials.
 path = /home/user/.config/mypass/db
+
+[password]
+# Length of newly generated passwords.
+length = 16
 ```
 
 

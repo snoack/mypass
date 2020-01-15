@@ -23,9 +23,10 @@ except ImportError:
 
 from mypass import Error, CredentialsDoNotExist, CredentialsAlreadytExist, DaemonFailed
 from mypass.client import Client, database_exists
+from mypass.config import get_config
 
 
-def generate_password():
+def generate_password(length):
     rand = random.SystemRandom()
 
     chars = [
@@ -35,11 +36,11 @@ def generate_password():
         rand.choice(string.punctuation),
     ]
 
-    while len(chars) < 16:
+    while len(chars) < length:
         chars.append(chr(rand.randint(33, 126)))
 
     rand.shuffle(chars)
-    return ''.join(chars)
+    return ''.join(chars)[:length]
 
 
 def prompt_new_passphrase():
@@ -89,9 +90,9 @@ class CLI:
             sys.exit(1)
 
     def _parse_arguments(self):
-        parser = argparse.ArgumentParser()
+        self._parser = argparse.ArgumentParser()
 
-        subparsers = parser.add_subparsers(dest='command')
+        subparsers = self._parser.add_subparsers(dest='command')
         subparsers.required = True
 
         subparser_get = subparsers.add_parser('get', help='Writes the requested password to stdout')
@@ -106,6 +107,7 @@ class CLI:
         subparser_new = subparsers.add_parser('new', help='Generates a new password and adds it to the database')
         subparser_new.add_argument('context').completer = complete_context
         subparser_new.add_argument('username', nargs='?', default='')
+        subparser_new.add_argument('--length', '-l', type=int)
 
         subparser_remove = subparsers.add_parser('remove', help='Removes a password from the database')
         subparser_remove.add_argument('context').completer = complete_context
@@ -134,9 +136,9 @@ class CLI:
         subparser_lock.set_defaults(exit_if_db_locked=True)
 
         if argcomplete:
-            argcomplete.autocomplete(parser, default_completer=None)
+            argcomplete.autocomplete(self._parser, default_completer=None)
 
-        self._args = parser.parse_args()
+        self._args = self._parser.parse_args()
 
     def _open_database(self):
         if self._client.database_locked:
@@ -184,7 +186,19 @@ class CLI:
                              password or self._args.password or getpass())
 
     def _call_new(self):
-        password = generate_password()
+        length = self._args.length
+
+        if length is None:
+            length = get_config('password', 'length')
+
+        min_length = 1
+        max_length = 10000
+        if not (min_length <= length <= max_length):
+            self._parser.error('Length of password must be '
+                               'between {} and {}, at least 16 '
+                               'is recommended'.format(min_length, max_length))
+
+        password = generate_password(length)
         self._call_add(password)
         print(password)
 
