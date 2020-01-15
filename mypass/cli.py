@@ -16,7 +16,9 @@ import string
 import argparse
 from getpass import getpass
 
-from mypass import Error, CredentialsAlreadytExist, DaemonFailed
+import argcomplete
+
+from mypass import Error, CredentialsDoNotExist, CredentialsAlreadytExist, DaemonFailed
 from mypass.client import Client, database_exists
 
 
@@ -47,11 +49,28 @@ def prompt_new_passphrase():
     return passphrase
 
 
+def complete_context(**kwargs):
+    with Client() as client:
+        if not client.database_locked:
+            return client.call('get-contexts')
+    return []
+
+
+def complete_username(parsed_args, **kwargs):
+    with Client() as client:
+        if not client.database_locked:
+            try:
+                return [user for user, _ in client.call('get-credentials',
+                                                        parsed_args.context)]
+            except CredentialsDoNotExist:
+                pass
+    return []
+
+
 class CLI:
 
     def __init__(self):
         try:
-            self._interactive = sys.stdin and sys.stdin.isatty()
             self._parse_arguments()
 
             with Client() as self._client:
@@ -73,27 +92,27 @@ class CLI:
         subparsers.required = True
 
         subparser_get = subparsers.add_parser('get', help='Writes the requested password to stdout')
-        subparser_get.add_argument('context')
+        subparser_get.add_argument('context').completer = complete_context
         subparser_get.set_defaults(fail_if_db_does_not_exist=True)
 
         subparser_add = subparsers.add_parser('add', help='Adds the given password to the database')
-        subparser_add.add_argument('context')
+        subparser_add.add_argument('context').completer = complete_context
         subparser_add.add_argument('username', nargs='?', default='')
         subparser_add.add_argument('password', nargs='?')
 
         subparser_new = subparsers.add_parser('new', help='Generates a new password and adds it to the database')
-        subparser_new.add_argument('context')
+        subparser_new.add_argument('context').completer = complete_context
         subparser_new.add_argument('username', nargs='?', default='')
 
         subparser_remove = subparsers.add_parser('remove', help='Removes a password from the database')
-        subparser_remove.add_argument('context')
-        subparser_remove.add_argument('username', nargs='?')
+        subparser_remove.add_argument('context').completer = complete_context
+        subparser_remove.add_argument('username', nargs='?').completer = complete_username
         subparser_remove.set_defaults(fail_if_db_does_not_exist=True)
 
         subparser_rename = subparsers.add_parser('rename', help='Changes the context and/or username of saved passwords')
-        subparser_rename.add_argument('old_context')
-        subparser_rename.add_argument('old_username', nargs='?')
-        subparser_rename.add_argument('--new-context')
+        subparser_rename.add_argument('context').completer = complete_context
+        subparser_rename.add_argument('username', nargs='?').completer = complete_username
+        subparser_rename.add_argument('--new-context').completer = complete_context
         subparser_rename.add_argument('--new-username')
         subparser_rename.set_defaults(fail_if_db_does_not_exist=True)
 
@@ -101,7 +120,7 @@ class CLI:
         subparser_list.set_defaults(fail_if_db_does_not_exist=True)
 
         subparser_alias = subparsers.add_parser('alias', help='Creates a new context that refers to the credentials of an existing context')
-        subparser_alias.add_argument('context')
+        subparser_alias.add_argument('context').completer = complete_context
         subparser_alias.add_argument('alias')
         subparser_alias.set_defaults(fail_if_db_does_not_exist=True)
 
@@ -111,6 +130,7 @@ class CLI:
         subparser_lock = subparsers.add_parser('lock', help='Closes the database and forgets the master passhrase')
         subparser_lock.set_defaults(exit_if_db_locked=True)
 
+        argcomplete.autocomplete(parser, default_completer=None)
         self._args = parser.parse_args()
 
     def _open_database(self):
@@ -119,14 +139,9 @@ class CLI:
                 sys.exit(0)
 
             if database_exists():
-                if not self._interactive:
-                    print('Database is locked', file=sys.stderr)
-                    sys.exit(1)
-
                 passphrase = getpass('Unlock database: ')
             else:
-                if not self._interactive or \
-                   getattr(self._args, 'fail_if_db_does_not_exist', False):
+                if getattr(self._args, 'fail_if_db_does_not_exist', False):
                     print('Database does not exist', file=sys.stderr)
                     sys.exit(1)
 
@@ -137,11 +152,7 @@ class CLI:
     def _check_override(self, *args):
         try:
             self._client.call(*args)
-        except CredentialsAlreadytExist as e:
-            if not self._interactive:
-                print(e, file=sys.stderr)
-                sys.exit(1)
-
+        except CredentialsAlreadytExist:
             if input('Credentials already exist. Do you want to '
                      'override them? [y/N] ')[:1].lower() != 'y':
                 print('Aborted', file=sys.stderr)
@@ -182,9 +193,9 @@ class CLI:
             self._client.call('delete-context', context)
 
     def _call_rename(self):
-        old_context = self._args.old_context
+        old_context = self._args.context
         new_context = self._args.new_context
-        old_username = self._args.old_username
+        old_username = self._args.username
         new_username = self._args.new_username
 
         if new_context is None:

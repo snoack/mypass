@@ -35,8 +35,15 @@ command (as root):
 pip3 install git+https://github.com/snoack/mypass
 ```
 
-If you want completion for subcommands, contexts and usernames when you hit
-*tab* in Bash, copy [`bash-completion/mypass`][1] to `/etc/bash_completion.d/`.
+In order to enable completion of subcommands, contexts and usernames in Bash,
+add the following line to your *~/.bashrc* or in a new file in
+*/etc/bash_completion.d/* (if available, for system-wide configuration):
+
+```
+eval "$(register-python-argcomplete --no-defaults mypass)"
+```
+
+For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][1].
 
 Usage
 -----
@@ -179,5 +186,5 @@ for example, credentials from following contexts are considered, in this order:
 The browser extension is intentionally kept simple and doesn't provide functionality
 to manage credentials. Please use the command line utility therefore.
 
-[1]: https://raw.githubusercontent.com/snoack/mypass/master/bash-completion/mypass
+[1]: https://argcomplete.readthedocs.io/#zsh-support
 [2]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka

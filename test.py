@@ -94,7 +94,7 @@ def test_bash_completion():
     shell = pexpect.spawn('bash --norc',
                           env=dict(os.environ, PS1='$ '),
                           timeout=TIMEOUT)
-    shell.sendline('source bash-completion/mypass')
+    shell.sendline('eval "$(register-python-argcomplete --no-defaults mypass)"')
     shell.readline()
 
     for input, completed in [('mypass g', 'et'),

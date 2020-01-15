@@ -85,5 +85,5 @@ setup(name='mypass',
       version='1.12',
       packages=['mypass'],
       scripts=['bin/mypass'],
-      install_requires=['pycrypto'],
+      install_requires=['pycrypto', 'argcomplete'],
       cmdclass=cmdclass)
