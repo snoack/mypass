@@ -9,5 +9,6 @@ Homepage: https://github.com/snoack/mypass
 Package: mypass
 Architecture: all
 Depends: ${misc:Depends}, ${python3:Depends}, libsqlcipher0
+Recommends: python3-crypto, python3-argcomplete
 Description: Command line password manager and browser extension
 

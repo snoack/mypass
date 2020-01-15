@@ -15,21 +15,31 @@ import json
 import tempfile
 import hashlib
 
-import Crypto.Cipher.AES
+try:
+    import Crypto.Cipher.AES
+except ImportError:
+    Crypto = None
+
 import sqlite3
 
-from mypass import CredentialsAlreadytExist
+from mypass import CredentialsAlreadytExist, DatabaseError
 from mypass.db import Database
+
+BLOCK_SIZE = 16
 
 
 def update_from_legacy_db(filename, passphrase):
     with open(filename, 'rb') as file:
         salt = file.read(48)
-        iv = file.read(Crypto.Cipher.AES.block_size)
+        iv = file.read(BLOCK_SIZE)
         ciphertext = file.read()
 
-    if not ciphertext or len(ciphertext) % Crypto.Cipher.AES.block_size:
+    if not ciphertext or len(ciphertext) % BLOCK_SIZE:
         return False
+
+    if not Crypto:
+        raise DatabaseError("pycrypto isn't installed, "
+                            'cannot migrate legacy database')
 
     for iterations in [200000, 10000]:
         key = hashlib.pbkdf2_hmac('sha256', passphrase.encode('utf-8'),

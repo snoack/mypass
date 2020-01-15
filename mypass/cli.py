@@ -16,7 +16,10 @@ import string
 import argparse
 from getpass import getpass
 
-import argcomplete
+try:
+    import argcomplete
+except ImportError:
+    argcomplete = None
 
 from mypass import Error, CredentialsDoNotExist, CredentialsAlreadytExist, DaemonFailed
 from mypass.client import Client, database_exists
@@ -130,7 +133,9 @@ class CLI:
         subparser_lock = subparsers.add_parser('lock', help='Closes the database and forgets the master passhrase')
         subparser_lock.set_defaults(exit_if_db_locked=True)
 
-        argcomplete.autocomplete(parser, default_completer=None)
+        if argcomplete:
+            argcomplete.autocomplete(parser, default_completer=None)
+
         self._args = parser.parse_args()
 
     def _open_database(self):

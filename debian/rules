@@ -2,5 +2,10 @@
 
 export PYBUILD_NAME=mypass
 
+# Prevent dh_python from automatically detecting requirements, since these
+# are optional and therefore listed under Recommends in debian/control.
+include /usr/share/dpkg/pkg-info.mk
+export PYBUILD_AFTER_INSTALL=rm {destdir}/{install_dir}/mypass-$(DEB_VERSION_UPSTREAM).egg-info/requires.txt
+
 %:
 	dh $@ --with python3 --buildsystem=pybuild

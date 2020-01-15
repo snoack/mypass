@@ -1,1 +1,3 @@
-eval "$(register-python-argcomplete3 --no-defaults mypass)"
+if type register-python-argcomplete3 &>/dev/null; then
+  eval "$(register-python-argcomplete3 --no-defaults mypass)"
+fi
