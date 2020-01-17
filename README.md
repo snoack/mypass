@@ -29,11 +29,14 @@ apt-get install mypass
 ### Using pip
 
 Make sure you have Python 3, SQLCipher and Git installed. Then run following
-command (as root):
+command (optionally as root for system-wide installation):
 
 ```
 pip3 install git+https://github.com/snoack/mypass
 ```
+
+
+#### Command completion (optional)
 
 In order to enable completion of subcommands, contexts and usernames in Bash,
 add the following line to your *~/.bashrc* or in a new file in
@@ -44,6 +47,37 @@ eval "$(register-python-argcomplete --no-defaults mypass)"
 ```
 
 For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][1].
+
+
+#### Browser integration (optional)
+
+In order to allow the browser extension to communicate with the host application,
+please run the following commands, replacing `<vendor>` and `<manifest-dir>`
+with the respective values from the table below:
+
+```
+mkdir -p <manifest-dir>
+ln -s -t <manifest-dir> $(python3 -c 'import mypass, os; print(os.path.dirname(mypass.__file__))')/native-messaging-hosts/<vendor>/*
+```
+
+|               | `vendor` | `manifest-dir` (system-wide)            | `manifest-dir` (per-user)                    |
+| ------------- | -------- | --------------------------------------- | -------------------------------------------- |
+| Firefox       | mozilla  | /usr/lib/mozilla/native-messaging-hosts | ~/.mozilla/native-messaging-hosts            |
+| Google Chrome | chrome   | /etc/opt/chrome/native-messaging-hosts  | ~/.config/google-chrome/NativeMessagingHosts |
+| Chromium      | chrome   | /etc/chromium/native-messaging-hosts    | ~/.config/chromium/NativeMessagingHosts      |
+
+
+If you want to load the extension in Firefox, please run the following commands,
+replacing `<prefix>` with */usr/share* for system-wide installation (root required),
+or replace `<prefix>` with `~` for per-user installation, then restart Firefox:
+
+```
+mkdir -p <prefix>/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+ln -s $(python3 -c 'import mypass, os; print(os.path.dirname(mypass.__file__))')/extension <prefix>/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/mypass@snoack.addons.mozilla.org
+```
+
+For Chromium-based browsers, you can install the extension from the [Chrome Web Store][2].
+
 
 Usage
 -----
@@ -168,14 +202,14 @@ length = 16
 ```
 
 
-Integration with Chrome and Firefox
------------------------------------
+Browser integration
+-------------------
 
 If you installed `mypass` on Debian/Ubuntu from the PPA above, next time you
-start Chromium or Firefox, the extension should be active. You can also install
-the extension from the [Chrome Web Store][2]. Note that while the browser
-extension is optional, it cannot be used standalone but requires the command
-line utility to be installed as well.
+start Chromium or Firefox, the extension should be active. If you installed
+`mypass` by other means see above how to install the browser extension.
+Note that while the browser extension is optional, it cannot be used standalone
+but requires the command line utility to be installed as well.
 
 The extension adds a button to the browser bar that when clicked, fills out login
 forms in the active tab, if the document's domain and path (partially) match the
