@@ -15,15 +15,21 @@ import configparser
 
 from mypass import ConfigError
 
-DATA_DIR = os.path.expanduser('~/.config/mypass')
+
+class _Path:
+    def __init__(self, path):
+        self.path = path
+
+
+DATA_DIR = '~/.config/mypass'
 
 SCHEMA = {
     'daemon': {
         'timeout': 30,
-        'logfile': DATA_DIR + '/log',
+        'logfile': _Path(os.path.join(DATA_DIR, 'log')),
     },
     'database': {
-        'path': DATA_DIR + '/db',
+        'path': _Path(os.path.join(DATA_DIR, 'db')),
     },
     'password': {
         'length': 16,
@@ -40,7 +46,7 @@ def get_config(section, option):
         _parser = configparser.ConfigParser()
         try:
             try:
-                _parser.read(os.path.join(DATA_DIR, 'config.ini'))
+                _parser.read(os.path.join(os.path.expanduser(DATA_DIR), 'config.ini'))
             except UnicodeDecodeError:
                 raise ConfigError('Unexpected encoding in config file')
             except configparser.ParsingError:
@@ -50,13 +56,23 @@ def get_config(section, option):
             raise
 
     default = SCHEMA[section][option]
+    is_path = False
+    if isinstance(default, _Path):
+        default = default.path
+        is_path = True
+
     if isinstance(default, bool):
         func = _parser.getboolean
     else:
         func = getattr(_parser, 'get' + type(default).__name__, _parser.get)
 
     try:
-        return func(section, option, fallback=default)
+        value = func(section, option, fallback=default)
     except ValueError:
         raise ConfigError('Invalid value for option {!r} in section '
                           '{!r} in config file'.format(option, section))
+
+    if is_path:
+        value = os.path.expanduser(value)
+
+    return value

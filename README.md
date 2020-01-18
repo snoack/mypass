@@ -181,8 +181,8 @@ so that you'd have to enter the passphrase again, from now on.
 Configuration
 -------------
 
-Optionally, you can create a config file under `~/.config/mypass`, in order to
-override any of the following presets:
+Optionally, you can create a config file under `~/.config/mypass/config.ini`,
+in order to override any of the following presets:
 
 ```ini
 [daemon]
@@ -191,11 +191,11 @@ override any of the following presets:
 timeout = 30
 
 # Path to log file any excpetions thrown by the daemon are written to.
-logfile = /home/user/.config/mypass/log
+logfile = ~/.config/mypass/log
 
 [database]
 # Path to the encrypted file storing the credentials.
-path = /home/user/.config/mypass/db
+path = ~/.config/mypass/db
 
 [password]
 # Length of newly generated passwords.
