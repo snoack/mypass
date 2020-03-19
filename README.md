@@ -21,6 +21,7 @@ A package is available from the author's PPA, which can be installed by running
 following commands (as root):
 
 ```
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CD42F3B2E1285F2F
 add-apt-repository ppa:s.noack/ppa
 apt-get update
 apt-get install mypass
