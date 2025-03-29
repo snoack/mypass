@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Sebastian Noack
+# Copyright (c) 2014-2025 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,7 +16,11 @@ import tempfile
 import hashlib
 
 try:
-    import Crypto.Cipher.AES
+    try:
+        import Cryptodome.Cipher.AES
+        Crypto = Cryptodome
+    except ImportError:
+        import Crypto.Cipher.AES
 except ImportError:
     Crypto = None
 
@@ -38,8 +42,10 @@ def update_from_legacy_db(filename, passphrase):
         return False
 
     if not Crypto:
-        raise DatabaseError("pycrypto isn't installed, "
-                            'cannot migrate legacy database')
+        raise DatabaseError(
+            'Wrong passphrase or legacy database (PyCrypto or PyCryptodome '
+            "isn't installed, cannot detect or migrate legacy databases)"
+        )
 
     for iterations in [200000, 10000]:
         key = hashlib.pbkdf2_hmac('sha256', passphrase.encode('utf-8'),
