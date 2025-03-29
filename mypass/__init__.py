@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Sebastian Noack
+# Copyright (c) 2014-2025 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -37,12 +37,6 @@ class CredentialsAlreadytExist(Error):
 
     def __str__(self):
         return 'Credentials already exist'
-
-
-class DaemonFailed(Error):
-
-    def __str__(self):
-        return 'Failed to spawn daemon'
 
 
 class ConnectionLost(Error):

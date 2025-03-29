@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Sebastian Noack
+# Copyright (c) 2014-2025 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,8 +16,8 @@ import json
 import re
 import urllib.parse
 
-from mypass import CredentialsDoNotExist, DaemonFailed
-from mypass.client import Client, database_exists
+from mypass import CredentialsDoNotExist
+from mypass.client import Client, database_exists, ConnectionLost
 
 
 def parse_request(length_bytes):
@@ -66,7 +66,7 @@ class NativeMessagingHost:
         if client.database_locked:
             try:
                 client.unlock_database(request['passphrase'])
-            except DaemonFailed:
+            except ConnectionLost:
                 return {'status': 'failure'}
 
         return {'status': 'ok'}

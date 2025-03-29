@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Sebastian Noack
+# Copyright (c) 2014-2025 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -21,7 +21,7 @@ try:
 except ImportError:
     argcomplete = None
 
-from mypass import Error, CredentialsDoNotExist, CredentialsAlreadytExist, DaemonFailed
+from mypass import Error, CredentialsDoNotExist, CredentialsAlreadytExist
 from mypass.client import Client, database_exists
 from mypass.config import get_config
 
@@ -80,8 +80,6 @@ class CLI:
             with Client() as self._client:
                 self._open_database()
                 getattr(self, '_call_' + self._args.command)()
-        except DaemonFailed:
-            sys.exit(1)
         except Error as e:
             print(e, file=sys.stderr)
             sys.exit(1)

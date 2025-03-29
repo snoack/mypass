@@ -1,4 +1,4 @@
-# Copyright (c) 2014-2020 Sebastian Noack
+# Copyright (c) 2014-2025 Sebastian Noack
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,35 +16,32 @@ import socket
 import pickle
 import subprocess
 
-from mypass import Error, DaemonFailed, ConnectionLost, SOCKET
+from mypass import Error, ConnectionLost, SOCKET
 from mypass.config import get_config
 
 
-def _spawn_daemon(passphrase):
+def _spawn_daemon():
     process = subprocess.Popen(
         [sys.executable, '-m', 'mypass.daemon'],
         env=dict(os.environ, LD_PRELOAD=(os.environ.get('LD_PRELOAD', '') +
                                          ' libsqlcipher.so.0').lstrip()),
         stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE
+        stdout=subprocess.PIPE,
+        bufsize=0
     )
-
-    with process.stdout:
-        with process.stdin:
-            process.stdin.write(passphrase.encode('utf-8'))
-        process.stdout.read()
-
-    if process.poll() is not None:
-        raise DaemonFailed
+    return (process.stdout, process.stdin)
 
 
 class Client:
+    def __init__(self, shared=True):
+        self.shared = shared
+        self._pipe = None
 
-    def __init__(self):
-        try:
-            self._connect()
-        except (FileNotFoundError, ConnectionRefusedError):
-            self._file = None
+        if shared:
+            try:
+                self._connect()
+            except (FileNotFoundError, ConnectionRefusedError):
+                pass
 
     def __enter__(self):
         return self
@@ -55,20 +52,22 @@ class Client:
     def _connect(self):
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             sock.connect(SOCKET)
-            self._file = sock.makefile('rwb', 0)
+            self._pipe = (sock.makefile('rb', 0),
+                          sock.makefile('wb', 0))
 
     @property
     def database_locked(self):
-        return not self._file
+        return not self._pipe
 
     def unlock_database(self, passphrase):
-        _spawn_daemon(passphrase)
-        self._connect()
+        self._pipe = _spawn_daemon()
+        self.call('init', passphrase, self.shared)
 
     def call(self, command, *args):
+        reader, writer = self._pipe
         try:
-            pickle.dump((command, args), self._file)
-            output = pickle.load(self._file)
+            pickle.dump((command, args), writer)
+            output = pickle.load(reader)
         except (BrokenPipeError, EOFError):
             raise ConnectionLost
 
@@ -78,8 +77,9 @@ class Client:
         return output
 
     def close(self):
-        if self._file:
-            self._file.close()
+        if self._pipe:
+            self._pipe[0].close()
+            self._pipe[1].close()
 
 
 def database_exists():
