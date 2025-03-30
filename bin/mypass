@@ -14,8 +14,9 @@
 # for more details.
 
 import sys
+import os
 
-if not sys.stdin or sys.stdin.isatty():
+if not sys.stdin or sys.stdin.isatty() or os.environ.get('_ARGCOMPLETE'):
 	from mypass.cli import CLI
 	CLI()
 else:
