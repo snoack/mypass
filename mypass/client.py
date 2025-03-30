@@ -15,16 +15,20 @@ import os
 import socket
 import pickle
 import subprocess
+import ctypes.util
 
 from mypass import Error, ConnectionLost, SOCKET
 from mypass.config import get_config
 
 
 def _spawn_daemon():
+    lib = ctypes.util.find_library('sqlcipher')
+    if not lib:
+        raise Error('SQLCipher library is not installed')
+    ld_preload = '{} {}'.format(os.environ.get('LD_PRELOAD', ''), lib).lstrip()
     process = subprocess.Popen(
         [sys.executable, '-m', 'mypass.daemon'],
-        env=dict(os.environ, LD_PRELOAD=(os.environ.get('LD_PRELOAD', '') +
-                                         ' libsqlcipher.so.0').lstrip()),
+        env=dict(os.environ, LD_PRELOAD=ld_preload),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         bufsize=0
