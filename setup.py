@@ -53,7 +53,7 @@ setup(name='mypass',
       packages=['mypass'],
       scripts=['bin/mypass'],
       install_requires=['pycrypto', 'argcomplete'],
-      py_requires='>=3.4',
+      python_requires='>=3.4',
       cmdclass={'install': Install},
       classifiers=[
           'Development Status :: 5 - Production/Stable',
