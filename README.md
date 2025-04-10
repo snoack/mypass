@@ -17,14 +17,10 @@ Installation
 
 ### On Debian/Ubuntu
 
-A package is available from the author's PPA, which can be installed by running
-following commands (as root):
+Debian packages are attached to the [releases on GitHub][1] and can be installed like below:
 
 ```
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys CD42F3B2E1285F2F
-add-apt-repository ppa:s.noack/ppa
-apt-get update
-apt-get install mypass
+sudo apt install mypass_*.deb
 ```
 
 
@@ -48,7 +44,7 @@ add the following line to your *~/.bashrc* or in a new file in
 eval "$(register-python-argcomplete --no-defaults mypass)"
 ```
 
-For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][1].
+For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][2].
 
 
 #### Browser integration (optional)
@@ -78,7 +74,7 @@ mkdir -p <prefix>/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
 ln -s $(python3 -c 'import mypass, os; print(os.path.dirname(mypass.__file__))')/extension <prefix>/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/mypass@snoack.addons.mozilla.org
 ```
 
-For Chromium-based browsers, you can install the extension from the [Chrome Web Store][2].
+For Chromium-based browsers, you can install the extension from the [Chrome Web Store][3].
 
 
 Usage
@@ -226,5 +222,7 @@ for example, credentials from following contexts are considered, in this order:
 The browser extension is intentionally kept simple and doesn't provide functionality
 to manage credentials. Please use the command line utility therefore.
 
-[1]: https://argcomplete.readthedocs.io/#zsh-support
-[2]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka
+[1]: https://github.com/snoack/mypass/releases
+[2]: https://argcomplete.readthedocs.io/#zsh-support
+[3]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka
+
