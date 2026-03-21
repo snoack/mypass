@@ -4,7 +4,7 @@ mypass
 [![Build Status](https://travis-ci.org/snoack/mypass.svg?branch=master)](https://travis-ci.org/snoack/mypass)
 [![Pypi Entry](https://badge.fury.io/py/mypass.svg)](https://pypi.python.org/pypi/mypass)
 
-A secure password manager for UNIX (Linux, BSD) that can be used conviniently
+A secure password manager for UNIX (Linux, BSD) that can be used conveniently
 from the command line.
 
 I prefer the command line over the GUI, and the lack of password managers that
@@ -24,24 +24,24 @@ sudo apt install mypass_*.deb
 ```
 
 
-### Using pip
+### From PyPI
 
-Make sure you have Python 3 and SQLCipher installed. Then run following
-command (optionally as root for system-wide installation):
+Make sure you have Python 3, `pipx` and SQLCipher installed. If you have not
+used `pipx` before, run `pipx ensurepath` once and restart your shell. Then run
+the following command for a per-user installation:
 
 ```
-pip3 install mypass
+pipx install mypass
 ```
 
 
 #### Command completion (optional)
 
 In order to enable completion of subcommands, contexts and usernames in Bash,
-add the following line to your *~/.bashrc* or in a new file in
-*/etc/bash_completion.d/* (if available, for system-wide configuration):
+add the following line to your *~/.bashrc*:
 
-```
-eval "$(register-python-argcomplete --no-defaults mypass)"
+```sh
+eval "$("$(pipx environment --value PIPX_HOME)/venvs/mypass/bin/register-python-argcomplete" --no-defaults mypass)"
 ```
 
 For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][2].
@@ -50,28 +50,29 @@ For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete`
 #### Browser integration (optional)
 
 In order to allow the browser extension to communicate with the host application,
-please run the following commands, replacing `<vendor>` and `<manifest-dir>`
-with the respective values from the table below:
+choose `VENDOR` and `MANIFEST_DIR` from the table below, then run:
 
+|               | `VENDOR` | `MANIFEST_DIR`                               |
+| ------------- | -------- | -------------------------------------------- |
+| Firefox       | mozilla  | ~/.mozilla/native-messaging-hosts            |
+| Google Chrome | chrome   | ~/.config/google-chrome/NativeMessagingHosts |
+| Chromium      | chrome   | ~/.config/chromium/NativeMessagingHosts      |
+
+```sh
+PIPX_VENV="$(pipx environment --value PIPX_HOME)/venvs/mypass"
+MYPASS_DIR="$("${PIPX_VENV}/bin/python" -c 'import mypass, os; print(os.path.dirname(mypass.__file__))')"
+VENDOR=...
+MANIFEST_DIR=...
+mkdir -p "$MANIFEST_DIR"
+sed 's#"path": ".*"#"path": "'"${PIPX_VENV}"'/bin/mypass"#' "${MYPASS_DIR}/native-messaging-hosts/${VENDOR}/org.snoack.mypass.json" > "${MANIFEST_DIR}/org.snoack.mypass.json"
 ```
-mkdir -p <manifest-dir>
-ln -s -t <manifest-dir> $(python3 -c 'import mypass, os; print(os.path.dirname(mypass.__file__))')/native-messaging-hosts/<vendor>/*
-```
-
-|               | `vendor` | `manifest-dir` (system-wide)            | `manifest-dir` (per-user)                    |
-| ------------- | -------- | --------------------------------------- | -------------------------------------------- |
-| Firefox       | mozilla  | /usr/lib/mozilla/native-messaging-hosts | ~/.mozilla/native-messaging-hosts            |
-| Google Chrome | chrome   | /etc/opt/chrome/native-messaging-hosts  | ~/.config/google-chrome/NativeMessagingHosts |
-| Chromium      | chrome   | /etc/chromium/native-messaging-hosts    | ~/.config/chromium/NativeMessagingHosts      |
-
 
 If you want to load the extension in Firefox, please run the following commands,
-replacing `<prefix>` with */usr/share* for system-wide installation (root required),
-or replace `<prefix>` with `~` for per-user installation, then restart Firefox:
+then restart Firefox:
 
-```
-mkdir -p <prefix>/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
-ln -s $(python3 -c 'import mypass, os; print(os.path.dirname(mypass.__file__))')/extension <prefix>/mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/mypass@snoack.addons.mozilla.org
+```sh
+mkdir -p ~/.mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+ln -s "${MYPASS_DIR}/extension" ~/.mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/mypass@snoack.addons.mozilla.org
 ```
 
 For Chromium-based browsers, you can install the extension from the [Chrome Web Store][3].
@@ -225,4 +226,3 @@ to manage credentials. Please use the command line utility therefore.
 [1]: https://github.com/snoack/mypass/releases
 [2]: https://argcomplete.readthedocs.io/#zsh-support
 [3]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka
-

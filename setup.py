@@ -12,6 +12,9 @@ class Install(install):
         manifest = OrderedDict()
         manifest['name'] = 'org.snoack.mypass'
         manifest['description'] = self.distribution.metadata.description
+        # Use the final install prefix rather than install_scripts so staged/package
+        # installs (e.g. dh-python) do not embed a temporary build path.
+        # Wheel-based installs still need post-install correction; see README.
         manifest['path'] = os.path.join(self.config_vars['exec_prefix'], 'bin', 'mypass')
         manifest['type'] = 'stdio'
 
@@ -26,7 +29,7 @@ class Install(install):
         outfile = os.path.join(dirname, manifest['name'] + '.json')
         log.info('Writing %s', outfile)
 
-        if not self.dry_run:
+        if not getattr(self, 'dry_run', False):
             with open(outfile, 'w') as file:
                 json.dump(manifest, file, indent='  ')
 
