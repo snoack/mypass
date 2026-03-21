@@ -55,7 +55,7 @@ setup(name='mypass',
       version='2.1',
       packages=['mypass'],
       scripts=['bin/mypass'],
-      install_requires=['pycrypto', 'argcomplete'],
+      install_requires=['pycryptodome', 'argcomplete'],
       python_requires='>=3.4',
       cmdclass={'install': Install},
       classifiers=[
