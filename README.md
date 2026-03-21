@@ -17,10 +17,17 @@ Installation
 
 ### On Debian/Ubuntu
 
-Debian packages are attached to the [releases on GitHub][1] and can be installed like below:
+You can install `mypass` via [`deb-get`][1]:
 
 ```
-sudo apt install mypass_*.deb
+sudo deb-get install mypass
+```
+
+Alternatively, download the latest `.deb` package from the [Releases][2] page
+for this repository and install it with `apt`:
+
+```
+sudo apt install ./mypass_*.deb
 ```
 
 
@@ -44,7 +51,7 @@ add the following line to your *~/.bashrc*:
 eval "$("$(pipx environment --value PIPX_HOME)/venvs/mypass/bin/register-python-argcomplete" --no-defaults mypass)"
 ```
 
-For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][2].
+For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][3].
 
 
 #### Browser integration (optional)
@@ -75,7 +82,7 @@ mkdir -p ~/.mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}
 ln -s "${MYPASS_DIR}/extension" ~/.mozilla/extensions/{ec8030f7-c20a-464f-9b0e-13a3a9e97384}/mypass@snoack.addons.mozilla.org
 ```
 
-For Chromium-based browsers, you can install the extension from the [Chrome Web Store][3].
+For Chromium-based browsers, you can install the extension from the [Chrome Web Store][4].
 
 
 Usage
@@ -204,9 +211,11 @@ length = 16
 Browser integration
 -------------------
 
-If you installed `mypass` on Debian/Ubuntu from the PPA above, next time you
-start Chromium or Firefox, the extension should be active. If you installed
-`mypass` by other means see above how to install the browser extension.
+If you installed `mypass` on Debian/Ubuntu using one of the package-based
+methods above, next time you start Chromium or Firefox, the extension should be
+active. If you installed `mypass` by other means see above how to install the
+browser extension.
+
 Note that while the browser extension is optional, it cannot be used standalone
 but requires the command line utility to be installed as well.
 
@@ -223,6 +232,7 @@ for example, credentials from following contexts are considered, in this order:
 The browser extension is intentionally kept simple and doesn't provide functionality
 to manage credentials. Please use the command line utility therefore.
 
-[1]: https://github.com/snoack/mypass/releases
-[2]: https://argcomplete.readthedocs.io/#zsh-support
-[3]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka
+[1]: https://github.com/wimpysworld/deb-get
+[2]: https://github.com/snoack/mypass/releases
+[3]: https://argcomplete.readthedocs.io/#zsh-support
+[4]: https://chrome.google.com/webstore/detail/mypass/ddbeciaedkkgeiaellofogahfcolmkka
