@@ -4,18 +4,17 @@ from collections import OrderedDict
 from distutils import log
 
 from setuptools import setup
-from setuptools.command.install import install
+from setuptools.command.build_py import build_py
 
 
-class Install(install):
-    def _write_manifest(self, vendor):
+class BuildPy(build_py):
+    def _write_manifest(self, package_dir, vendor):
         manifest = OrderedDict()
         manifest['name'] = 'org.snoack.mypass'
         manifest['description'] = self.distribution.metadata.description
-        # Use the final install prefix rather than install_scripts so staged/package
-        # installs (e.g. dh-python) do not embed a temporary build path.
-        # Wheel-based installs still need post-install correction; see README.
-        manifest['path'] = os.path.join(self.config_vars['exec_prefix'], 'bin', 'mypass')
+        # pipx/pip users rewrite this template in the README instructions,
+        # dh-python installs the console script into /usr/bin.
+        manifest['path'] = '/usr/bin/mypass'
         manifest['type'] = 'stdio'
 
         if vendor == 'mozilla':
@@ -23,23 +22,22 @@ class Install(install):
         else:
             manifest['allowed_origins'] = ['chrome-extension://ddbeciaedkkgeiaellofogahfcolmkka/']
 
-        dirname = os.path.join(self.install_lib, 'mypass', 'native-messaging-hosts', vendor)
+        dirname = os.path.join(package_dir, 'native-messaging-hosts', vendor)
         self.mkpath(dirname)
 
         outfile = os.path.join(dirname, manifest['name'] + '.json')
         log.info('Writing %s', outfile)
 
-        if not getattr(self, 'dry_run', False):
-            with open(outfile, 'w') as file:
-                json.dump(manifest, file, indent='  ')
+        with open(outfile, 'w') as file:
+            json.dump(manifest, file, indent='  ')
 
     def run(self):
         super().run()
 
-        self._write_manifest('chrome')
-        self._write_manifest('mozilla')
-
-        self.copy_tree('extension', os.path.join(self.install_lib, 'mypass', 'extension'))
+        package_dir = os.path.join(self.build_lib, 'mypass')
+        self._write_manifest(package_dir, 'chrome')
+        self._write_manifest(package_dir, 'mozilla')
+        self.copy_tree('extension', os.path.join(package_dir, 'extension'))
 
 
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as file:
@@ -55,9 +53,10 @@ setup(name='mypass',
       version='2.1',
       packages=['mypass'],
       scripts=['bin/mypass'],
+      package_data={'mypass': ['extension/*', 'native-messaging-hosts/*/*.json']},
       install_requires=['pycryptodome', 'argcomplete'],
       python_requires='>=3.4',
-      cmdclass={'install': Install},
+      cmdclass={'build_py': BuildPy},
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: End Users/Desktop',
