@@ -1,11 +1,22 @@
 #!/usr/bin/make -f
 
 export PYBUILD_NAME=mypass
+COMPLETION_DIR = debian/build/completion
 
 # Prevent dh_python from automatically detecting requirements, since these
 # are optional and therefore listed under Recommends in debian/control.
 include /usr/share/dpkg/pkg-info.mk
 export PYBUILD_AFTER_INSTALL=rm {destdir}/{install_dir}/mypass-$(DEB_VERSION_UPSTREAM).egg-info/requires.txt
+
+override_dh_auto_build:
+	dh_auto_build
+	mkdir -p $(COMPLETION_DIR)/bash $(COMPLETION_DIR)/fish $(COMPLETION_DIR)/zsh
+	register-python-argcomplete --shell bash --no-defaults mypass \
+		> $(COMPLETION_DIR)/bash/mypass
+	register-python-argcomplete --shell fish mypass \
+		> $(COMPLETION_DIR)/fish/mypass.fish
+	register-python-argcomplete --shell zsh mypass \
+		> $(COMPLETION_DIR)/zsh/_mypass
 
 %:
 	dh $@ --with python3 --buildsystem=pybuild

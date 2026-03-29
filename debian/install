@@ -1,3 +1,4 @@
-debian/completion/bash/mypass usr/share/bash-completion/completions/
-debian/completion/fish/mypass.fish usr/share/fish/vendor_completions.d/
+debian/build/completion/bash/mypass usr/share/bash-completion/completions/
+debian/build/completion/fish/mypass.fish usr/share/fish/vendor_completions.d/
+debian/build/completion/zsh/_mypass usr/share/zsh/vendor-completions/
 debian/chromium/mypass etc/chromium.d/

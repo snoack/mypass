@@ -45,10 +45,12 @@ pipx install mypass
 #### Command completion (optional)
 
 In order to enable completion of subcommands, contexts and usernames in Bash,
-add the following line to your *~/.bashrc*:
+generate the completion script once and restart your shell:
 
 ```sh
-eval "$("$(pipx environment --value PIPX_HOME)/venvs/mypass/bin/register-python-argcomplete" --no-defaults mypass)"
+mkdir -p ~/.local/share/bash-completion/completions
+"$(pipx environment --value PIPX_HOME)/venvs/mypass/bin/register-python-argcomplete" \
+  --shell bash --no-defaults mypass > ~/.local/share/bash-completion/completions/mypass
 ```
 
 For enabling completion in Zsh, Tcsh and Fish please refer to the [`argcomplete` documentation][3].
