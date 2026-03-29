@@ -19,5 +19,8 @@ override_dh_auto_build:
 	register-python-argcomplete --shell zsh mypass \
 		> $(COMPLETION_DIR)/zsh/_mypass
 
+override_dh_auto_test:
+	PATH=$(CURDIR)/bin:$$PATH PYTHONPATH=$(CURDIR) python3 -m pytest -q test.py
+
 %:
 	dh $@ --with python3 --buildsystem=pybuild
