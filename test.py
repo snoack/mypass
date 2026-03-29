@@ -6,6 +6,7 @@ import pexpect
 import pytest
 
 TIMEOUT = 3
+PROMPT = '$ '
 
 
 @pytest.fixture(autouse=True)
@@ -92,10 +93,10 @@ def test_bash_completion():
                                           ('Verify passphrase: ', 'masterpw')])
 
     shell = pexpect.spawn('bash --norc',
-                          env=dict(os.environ, PS1='$ '),
+                          env=dict(os.environ, PS1=PROMPT, TERM='dumb'),
                           timeout=TIMEOUT)
     shell.sendline('eval "$(register-python-argcomplete --no-defaults mypass)"')
-    shell.readline()
+    shell.expect_exact(PROMPT)
 
     for input, completed in [('mypass g', 'et'),
                              ('mypass get e', 'xample.com'),
@@ -113,6 +114,7 @@ def test_bash_completion():
                              ('mypass rename example.com j', 'oe'),
                              ('mypass rename --new-context=e', 'xample.com')]:
         shell.send(input + '\t')
-        shell.expect(r'^\$ {} '.format(re.escape(input + completed)))
+        shell.expect_exact(input + completed)
         shell.sendintr()
-        shell.expect(r'^\^C\r\n')
+        shell.expect_exact('^C\r\n')
+        shell.expect_exact(PROMPT)
