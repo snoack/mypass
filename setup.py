@@ -1,17 +1,17 @@
 import os
 import json
+import re
+import subprocess
+import time
+from datetime import datetime, timezone
 from collections import OrderedDict
 from distutils import log
+from distutils.errors import DistutilsSetupError
 
-from setuptools import setup
+from setuptools import Command, setup
 from setuptools.command.bdist_wheel import bdist_wheel
 from setuptools.command.build_py import build_py
 from setuptools.command.sdist import sdist
-
-try:
-    from build_manpages import build_manpages
-except ImportError:
-    build_manpages = None
 
 
 MANPAGE = os.path.join('man', 'mypass.1')
@@ -62,16 +62,96 @@ class BuildPy(build_py):
         self.copy_tree('extension', os.path.join(package_dir, 'extension'))
 
 
+class BuildManpages(Command):
+    description = 'Generate manual pages from README.md and argparse metadata'
+    user_options = [
+        ('output=', 'O', 'output manpage path'),
+        ('readme=', 'R', 'README markdown path'),
+    ]
+
+    def initialize_options(self):
+        self.output = None
+        self.readme = None
+        self.argument_parser = None
+
+    def finalize_options(self):
+        if self.output is None:
+            self.output = MANPAGE
+        if self.readme is None:
+            self.readme = 'README.md'
+
+    def _extract_section(self, readme, title):
+        match = re.search(
+            r'^{}\n-+\n(?P<body>.*?)(?=^[^\n]+\n[-=]+\n|\Z)'.format(re.escape(title)),
+            readme,
+            re.MULTILINE | re.DOTALL,
+        )
+        if not match:
+            raise ValueError('Could not find README section: {}'.format(title))
+
+        return match.group('body').strip()
+
+    def _get_argument_parser(self):
+        from mypass.cli import get_argument_parser
+        return get_argument_parser()
+
+    def _build_manpage_markdown(self, argument_parser):
+        with open(self.readme) as file:
+            readme = file.read()
+
+        parts = [
+            '# NAME',
+            '',
+            '{} - {}'.format(argument_parser.prog, self.distribution.get_description()),
+            '',
+            '# SYNOPSIS',
+            '',
+            '```text',
+            argument_parser.format_usage().strip().split(': ', 1)[-1],
+            '```',
+        ]
+
+        for title in ['Usage', 'Configuration']:
+            parts.extend([
+                '',
+                '# {}'.format(title.upper()),
+                '',
+                self._extract_section(readme, title),
+            ])
+
+        return '\n'.join(parts).strip() + '\n'
+
+    def run(self):
+        argument_parser = self._get_argument_parser()
+        build_timestamp = int(os.environ.get('SOURCE_DATE_EPOCH') or time.time())
+        build_date = datetime.fromtimestamp(build_timestamp, timezone.utc)
+        self.mkpath(os.path.dirname(self.output))
+        subprocess.run(
+            [
+                'pandoc',
+                '--standalone',
+                '--from=gfm',
+                '--to=man',
+                '--output', self.output,
+                '--metadata=title:{}(1) {} {}'.format(
+                    argument_parser.prog.upper(),
+                    argument_parser.prog,
+                    self.distribution.get_version()
+                ),
+                '--metadata=author:{} <{}>'.format(
+                    self.distribution.get_author(),
+                    self.distribution.get_author_email()
+                ),
+                '--metadata=date:{}'.format(build_date.strftime('%Y-%m-%d'))
+            ],
+            input=self._build_manpage_markdown(argument_parser),
+            text=True,
+            check=True
+        )
+
+
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as file:
     long_description = file.read()
-
-cmdclass = {
-    'build_py': BuildPy,
-    'sdist': require_manpages_factory(sdist),
-    'bdist_wheel': require_manpages_factory(bdist_wheel),
-}
-if build_manpages:
-    cmdclass['build_manpages'] = build_manpages
 
 setup(name='mypass',
       description='A secure password manager with command line interface',
@@ -88,7 +168,12 @@ setup(name='mypass',
       package_data={'mypass': ['extension/*', 'native-messaging-hosts/*/*.json']},
       install_requires=['pycryptodome', 'argcomplete'],
       python_requires='>=3.4',
-      cmdclass=cmdclass,
+      cmdclass={
+          'build_py': BuildPy,
+          'build_manpages': BuildManpages,
+          'sdist': require_manpages_factory(sdist),
+          'bdist_wheel': require_manpages_factory(bdist_wheel),
+      },
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: End Users/Desktop',

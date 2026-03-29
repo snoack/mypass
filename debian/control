@@ -5,9 +5,9 @@ Priority: optional
 Build-Depends:
  debhelper (>= 9),
  dh-python,
+ pandoc,
  python3,
  python3-argcomplete,
- python3-argparse-manpage,
  python3-pexpect,
  python3-pytest,
  python3-setuptools
