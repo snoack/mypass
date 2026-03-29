@@ -1,10 +1,17 @@
-mypass (2.1) bionic; urgeny=medium
+mypass (2.2) unstable; urgency=medium
+
+  * Add a man page
+  * Generate shell completions at build time and add Zsh completion
+
+ -- Sebastian Noack <sebastian.noack@gmail.com>  Sun, 29 Mar 2026 12:18:12 -0400
+
+mypass (2.1) unstable; urgency=medium
 
   * Restored compatiblity with Debian 12 & 13
 
  -- Sebastian Noack <sebastian.noack@gmail.com>  Sun, 30 Mar 2025 14:00:00 -0400
 
-mypass (2.0) bionic; urgeny=medium
+mypass (2.0) bionic; urgency=medium
 
   * Switched to SQLCiper
   * Added support for context aliases
