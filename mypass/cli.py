@@ -73,9 +73,14 @@ def complete_username(parsed_args, **kwargs):
 
 class CLI:
 
-    def __init__(self):
+    def __init__(self, args=None):
         try:
-            self._parse_arguments()
+            self._parser = get_argument_parser()
+
+            if argcomplete:
+                argcomplete.autocomplete(self._parser, default_completer=None)
+
+            self._args = self._parser.parse_args(args=args)
 
             with Client() as self._client:
                 self._open_database()
@@ -86,57 +91,6 @@ class CLI:
         except KeyboardInterrupt:
             print(file=sys.stderr)
             sys.exit(1)
-
-    def _parse_arguments(self):
-        self._parser = argparse.ArgumentParser()
-
-        subparsers = self._parser.add_subparsers(dest='command')
-        subparsers.required = True
-
-        subparser_get = subparsers.add_parser('get', help='Writes the requested password to stdout')
-        subparser_get.add_argument('context').completer = complete_context
-        subparser_get.set_defaults(fail_if_db_does_not_exist=True)
-
-        subparser_add = subparsers.add_parser('add', help='Adds the given password to the database')
-        subparser_add.add_argument('context').completer = complete_context
-        subparser_add.add_argument('username', nargs='?', default='')
-        subparser_add.add_argument('password', nargs='?')
-
-        subparser_new = subparsers.add_parser('new', help='Generates a new password and adds it to the database')
-        subparser_new.add_argument('context').completer = complete_context
-        subparser_new.add_argument('username', nargs='?', default='')
-        subparser_new.add_argument('--length', '-l', type=int)
-
-        subparser_remove = subparsers.add_parser('remove', help='Removes a password from the database')
-        subparser_remove.add_argument('context').completer = complete_context
-        subparser_remove.add_argument('username', nargs='?').completer = complete_username
-        subparser_remove.set_defaults(fail_if_db_does_not_exist=True)
-
-        subparser_rename = subparsers.add_parser('rename', help='Changes the context and/or username of saved passwords')
-        subparser_rename.add_argument('context').completer = complete_context
-        subparser_rename.add_argument('username', nargs='?').completer = complete_username
-        subparser_rename.add_argument('--new-context').completer = complete_context
-        subparser_rename.add_argument('--new-username')
-        subparser_rename.set_defaults(fail_if_db_does_not_exist=True)
-
-        subparser_list = subparsers.add_parser('list', help='Writes the contexts of all passwords to stdout')
-        subparser_list.set_defaults(fail_if_db_does_not_exist=True)
-
-        subparser_alias = subparsers.add_parser('alias', help='Creates a new context that refers to the credentials of an existing context')
-        subparser_alias.add_argument('context').completer = complete_context
-        subparser_alias.add_argument('alias')
-        subparser_alias.set_defaults(fail_if_db_does_not_exist=True)
-
-        subparser_changepw = subparsers.add_parser('changepw', help='Changes the master passphrase')
-        subparser_changepw.set_defaults(fail_if_db_does_not_exist=True)
-
-        subparser_lock = subparsers.add_parser('lock', help='Closes the database and forgets the master passhrase')
-        subparser_lock.set_defaults(exit_if_db_locked=True)
-
-        if argcomplete:
-            argcomplete.autocomplete(self._parser, default_completer=None)
-
-        self._args = self._parser.parse_args()
 
     def _open_database(self):
         if self._client.database_locked:
@@ -237,3 +191,56 @@ class CLI:
 
     def _call_lock(self):
         self._client.call('shutdown')
+
+
+def get_argument_parser():
+    parser = argparse.ArgumentParser(
+        prog='mypass',
+        description='A secure password manager with command line interface',
+    )
+    parser.man_short_description = parser.description
+
+    subparsers = parser.add_subparsers(dest='command')
+    subparsers.required = True
+
+    subparser_get = subparsers.add_parser('get', help='Writes the requested password to stdout')
+    subparser_get.add_argument('context').completer = complete_context
+    subparser_get.set_defaults(fail_if_db_does_not_exist=True)
+
+    subparser_add = subparsers.add_parser('add', help='Adds the given password to the database')
+    subparser_add.add_argument('context').completer = complete_context
+    subparser_add.add_argument('username', nargs='?', default='')
+    subparser_add.add_argument('password', nargs='?')
+
+    subparser_new = subparsers.add_parser('new', help='Generates a new password and adds it to the database')
+    subparser_new.add_argument('context').completer = complete_context
+    subparser_new.add_argument('username', nargs='?', default='')
+    subparser_new.add_argument('--length', '-l', type=int)
+
+    subparser_remove = subparsers.add_parser('remove', help='Removes a password from the database')
+    subparser_remove.add_argument('context').completer = complete_context
+    subparser_remove.add_argument('username', nargs='?').completer = complete_username
+    subparser_remove.set_defaults(fail_if_db_does_not_exist=True)
+
+    subparser_rename = subparsers.add_parser('rename', help='Changes the context and/or username of saved passwords')
+    subparser_rename.add_argument('context').completer = complete_context
+    subparser_rename.add_argument('username', nargs='?').completer = complete_username
+    subparser_rename.add_argument('--new-context').completer = complete_context
+    subparser_rename.add_argument('--new-username')
+    subparser_rename.set_defaults(fail_if_db_does_not_exist=True)
+
+    subparser_list = subparsers.add_parser('list', help='Writes the contexts of all passwords to stdout')
+    subparser_list.set_defaults(fail_if_db_does_not_exist=True)
+
+    subparser_alias = subparsers.add_parser('alias', help='Creates a new context that refers to the credentials of an existing context')
+    subparser_alias.add_argument('context').completer = complete_context
+    subparser_alias.add_argument('alias')
+    subparser_alias.set_defaults(fail_if_db_does_not_exist=True)
+
+    subparser_changepw = subparsers.add_parser('changepw', help='Changes the master passphrase')
+    subparser_changepw.set_defaults(fail_if_db_does_not_exist=True)
+
+    subparser_lock = subparsers.add_parser('lock', help='Closes the database and forgets the master passhrase')
+    subparser_lock.set_defaults(exit_if_db_locked=True)
+
+    return parser

@@ -10,6 +10,7 @@ export PYBUILD_AFTER_INSTALL=rm {destdir}/{install_dir}/mypass-$(DEB_VERSION_UPS
 
 override_dh_auto_build:
 	dh_auto_build
+	python3 setup.py build_manpages
 	mkdir -p $(COMPLETION_DIR)/bash $(COMPLETION_DIR)/fish $(COMPLETION_DIR)/zsh
 	register-python-argcomplete --shell bash --no-defaults mypass \
 		> $(COMPLETION_DIR)/bash/mypass

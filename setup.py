@@ -4,7 +4,29 @@ from collections import OrderedDict
 from distutils import log
 
 from setuptools import setup
+from setuptools.command.bdist_wheel import bdist_wheel
 from setuptools.command.build_py import build_py
+from setuptools.command.sdist import sdist
+
+try:
+    from build_manpages import build_manpages
+except ImportError:
+    build_manpages = None
+
+
+MANPAGE = os.path.join('man', 'mypass.1')
+
+
+def require_manpages_factory(base_command):
+    class RequireManpages(base_command):
+        def run(self):
+            if not os.path.isfile(MANPAGE):
+                raise DistutilsSetupError(
+                    '{} is missing; run "python3 setup.py build_manpages" first.'.format(MANPAGE)
+                )
+            super().run()
+
+    return RequireManpages
 
 
 class BuildPy(build_py):
@@ -43,6 +65,14 @@ class BuildPy(build_py):
 with open(os.path.join(os.path.dirname(__file__), 'README.md')) as file:
     long_description = file.read()
 
+cmdclass = {
+    'build_py': BuildPy,
+    'sdist': require_manpages_factory(sdist),
+    'bdist_wheel': require_manpages_factory(bdist_wheel),
+}
+if build_manpages:
+    cmdclass['build_manpages'] = build_manpages
+
 setup(name='mypass',
       description='A secure password manager with command line interface',
       long_description=long_description,
@@ -53,10 +83,11 @@ setup(name='mypass',
       version='2.1',
       packages=['mypass'],
       scripts=['bin/mypass'],
+      data_files=[('share/man/man1', [MANPAGE])],
       package_data={'mypass': ['extension/*', 'native-messaging-hosts/*/*.json']},
       install_requires=['pycryptodome', 'argcomplete'],
       python_requires='>=3.4',
-      cmdclass={'build_py': BuildPy},
+      cmdclass=cmdclass,
       classifiers=[
           'Development Status :: 5 - Production/Stable',
           'Intended Audience :: End Users/Desktop',

@@ -1,1 +1,2 @@
 recursive-include extension *
+include man/mypass.1
